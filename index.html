@@ -34,7 +34,10 @@ button{font-family:inherit}
 .cell{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:4px 8px 3px;min-width:48px;display:flex;flex-direction:column;gap:2px}
 .lb{font:9px/1 var(--f-ui);letter-spacing:.08em;color:var(--muted);white-space:nowrap}
 .v{font:18px/1 var(--f-num);color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap}
-body.in-cockpit #hud,body.nodata #hud{display:none}
+body.in-cockpit:not(.touch) #hud,body.nodata #hud{display:none}
+/* phones: the panel gauges are too small to read, so keep a compact speed and altitude readout in the cockpit view */
+body.touch.in-cockpit #hud .cell:nth-child(n+3){display:none}
+body.noflaps #flapUp,body.noflaps #flapDn,body.noflaps #hud .cell:nth-child(5){display:none}
 
 #topBtns{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));display:flex;gap:6px}
 .btn{font:10px/1 var(--f-ui);letter-spacing:.08em;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;height:38px;min-width:58px;padding:0 10px;cursor:pointer;touch-action:none}
@@ -1966,6 +1969,7 @@ function updateHUD() {
   const vsr = Math.round(instr.vsi / 10) * 10; eVs.textContent = (vsr > 0 ? '+' : vsr < 0 ? '−' : '') + Math.abs(vsr);
   let h = Math.round(heading()); if (h === 0) h = 360; eHdg.textContent = String(h).padStart(3, '0');
   eFlap.textContent = T.flaps.length > 1 ? T.flaps[ac.flaps].deg + '°' : '—';
+  document.body.classList.toggle('noflaps', T.flaps.length < 2);
   const W = WINDS[onMoon ? 'none' : settings.wind]; eWind.textContent = !W.kt ? 'CALM' : `${W.from}/${W.kt}${W.gust > 3 ? 'G' + (W.kt + W.gust) : ''}`;
   syncThrottle();
 }
