@@ -6,6 +6,7 @@ A browser flight sim: fly a Piper J-3 Cub into a fictional grass-strip fly-in in
 
 - Single-file page (`index.html`), built on Three.js r128 loaded from cdnjs. No build step.
 - Six-degree-of-freedom flight model at 120 Hz with prop slipstream, P-factor, ground effect and spring-damper gear.
+- Auto trim (on by default) holds your speed when you let go of the stick; auto rudder is on by default on phones.
 - Calm, light or gusty wind; trees, parked planes, buildings and ponds to avoid. There's a Moon mode too.
 - Keyboard, mouse, gamepad or phone. On a phone, turn it sideways: throttle slider on the left, stick on the right. On iPhone, Share → Add to Home Screen gives a full-screen view.
 

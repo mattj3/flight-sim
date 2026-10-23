@@ -68,6 +68,7 @@ body:not(.touch) .touch-only{display:none!important}
 .touch-only .btn{background:rgba(12,19,14,.5);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
 #thr{background:rgba(12,19,14,.5)}
 body.autorud #rudRow{display:none!important}
+body.autotrim #trimCol{display:none!important}
 #rotate{display:none;position:fixed;left:50%;top:calc(58px + env(safe-area-inset-top,0px));transform:translateX(-50%);font:12px/1.3 var(--f-ui);color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 11px;pointer-events:none;white-space:nowrap}
 @media (orientation:portrait) and (max-width:620px){body.touch.flying #rotate{display:block}}
 @media (max-height:500px){
@@ -102,6 +103,12 @@ body.autorud #rudRow{display:none!important}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 .primary,.secondary{flex:1 1 200px;height:46px;border-radius:7px;font:700 12px/1 var(--f-ui);letter-spacing:.06em;cursor:pointer}
 .primary{background:var(--cub);color:var(--pine);border:1px solid var(--cub)}
+/* make the way in obvious: a labelled, taller, gently pulsing start button */
+.startcap{color:var(--cub);margin-bottom:-6px}
+.actions .primary,.actions .secondary{height:54px;font-size:14px}
+#bApproach{animation:startPulse 1.6s ease-in-out infinite}
+@keyframes startPulse{0%,100%{box-shadow:0 0 0 0 rgba(242,183,5,.55)}50%{box-shadow:0 0 0 8px rgba(242,183,5,0)}}
+@media (prefers-reduced-motion:reduce){#bApproach{animation:none}}
 .secondary{background:transparent;color:var(--fg);border:1px solid var(--line)}
 .secondary:hover{border-color:var(--cub)}
 .placard{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);border-radius:6px;overflow:hidden}
@@ -133,11 +140,11 @@ body:not(.touch) .touch-help{display:none}
 </style>
 
 </head>
-<body>
+<body class="noflaps">
 <canvas id="view"></canvas>
 
 <div id="hud">
-  <div class="cell"><span class="lb" id="lIas">IAS KT</span><span class="v" id="vIas">0</span></div>
+  <div class="cell"><span class="lb" id="lIas">IAS MPH</span><span class="v" id="vIas">0</span></div>
   <div class="cell"><span class="lb">ALT FT</span><span class="v" id="vAlt">0</span></div>
   <div class="cell"><span class="lb">V/S FPM</span><span class="v" id="vVs">0</span></div>
   <div class="cell"><span class="lb">HDG</span><span class="v" id="vHdg">200</span></div>
@@ -152,7 +159,7 @@ body:not(.touch) .touch-help{display:none}
 
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="rotate">Turn your phone sideways for the full view</div>
-<div id="hint">W S pitch · A D roll · Q E rudder · R F throttle · V X flaps · [ ] trim · B brakes · C view · drag to look · Esc menu</div>
+<div id="hint">W S pitch · A D roll · Q E rudder · R F throttle · [ ] trim · B brakes · C view · drag to look · Esc menu</div>
 
 <div id="rudRow" class="touch-only">
   <button class="btn" id="rudL" type="button" aria-label="Left rudder">◄ RUDDER</button>
@@ -184,10 +191,11 @@ body:not(.touch) .touch-help{display:none}
     <p class="status" id="mStatus" hidden></p>
     <div class="plcap">AIRCRAFT</div>
     <div class="acsel" role="radiogroup" aria-label="Aircraft" id="acsel"></div>
+    <div class="plcap startcap"><span class="key-help">CLICK</span><span class="touch-help">TAP</span> A BUTTON TO START FLYING ▾</div>
     <div class="actions">
       <button class="primary" id="bResume" type="button" hidden>Resume flight</button>
-      <button class="primary" id="bApproach" type="button">Short final · Runway 20</button>
-      <button class="secondary" id="bTakeoff" type="button">Line up · Runway 20</button>
+      <button class="primary" id="bApproach" type="button">▶ Short final · Runway 20</button>
+      <button class="secondary" id="bTakeoff" type="button">▶ Line up · Runway 20</button>
     </div>
     <div class="plcap" id="plcap">V-SPEEDS · MPH IAS</div>
     <div class="placard" id="placard"></div>
@@ -223,14 +231,14 @@ body:not(.touch) .touch-help{display:none}
       <button class="tog" id="tData" type="button" aria-pressed="true">DATA STRIP</button>
       <button class="tog" id="tHigh" type="button" aria-pressed="true">HIGH QUALITY</button>
       <button class="tog" id="tAuto" type="button" aria-pressed="false">AUTO RUDDER</button>
+      <button class="tog" id="tTrim" type="button" aria-pressed="false">AUTO TRIM</button>
     </div>
     <dl class="help key-help">
       <dt>W S · ↑ ↓</dt><dd>Nose down / nose up (stick or yoke)</dd>
       <dt>A D · ← →</dt><dd>Roll left / right</dd>
       <dt>Q E</dt><dd>Rudder. Steers on the ground: taildraggers need it the whole roll</dd>
       <dt>R F</dt><dd>Throttle up / down</dd>
-      <dt>V X</dt><dd>Flaps down / up</dd>
-      <dt>[ ]</dt><dd>Trim nose down / nose up</dd>
+      <dt>[ ]</dt><dd>Trim nose down / nose up, with auto trim off (menu). Auto trim holds the speed you were flying when you let go of the stick</dd>
       <dt>B · Space</dt><dd>Brakes. Hold rudder to brake one side</dd>
       <dt>C · drag</dt><dd>Change view · drag the view to look around the cabin</dd>
     </dl>
@@ -238,6 +246,7 @@ body:not(.touch) .touch-help{display:none}
       <dt>Left slider</dt><dd>Throttle</dd>
       <dt>Right stick</dt><dd>Pull down to raise the nose, sideways to bank</dd>
       <dt>Rudder</dt><dd>Auto rudder (menu) steers with the stick on the ground and keeps the ball centred. Turn it off for the rudder buttons; taildraggers need them the whole roll</dd>
+      <dt>Auto trim</dt><dd>On by default. Let go of the stick and it holds the speed you were flying. Turn it off in the menu for the trim buttons</dd>
       <dt>Drag view</dt><dd>Look around the cabin</dd>
     </dl>
     <p class="fine">A fictional grass-strip fly-in in the East Texas piney woods, set on a late-October afternoon. Scenery is generated, not surveyed. Gamepads work too.</p>
@@ -257,7 +266,7 @@ const KT = 1.94384, FT = 3.28084, FPM = 196.85, MPH = 2.23694;
 
 /* ---------- settings ---------- */
 const coarse = matchMedia('(pointer: coarse)').matches;
-const settings = { sound: true, data: true, high: !coarse, ac: 'j3', wind: 'light', wx: 'afternoon', autoRud: coarse, loc: 'earth' };
+const settings = { sound: true, data: true, high: !coarse, ac: 'j3', wind: 'light', wx: 'afternoon', autoRud: coarse, autoTrim: true, loc: 'earth' };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('rlaw-settings') || '{}')); } catch (e) {}
 const saveSettings = () => { try { localStorage.setItem('rlaw-settings', JSON.stringify(settings)); } catch (e) {} };
 if (coarse) document.body.classList.add('touch');
@@ -799,7 +808,7 @@ const TYPES = {
     vRef: 30, kA: 9, kE: .36, a0: .02, roll: 2.4, rollD: 3.6, yaw: 1.9, slip: .3, pfac: .1, gyro: .3, trimRange: .4,
     eye: [0, .68, .78], fov: 64, tilt: -.05,
     placard: [['VS', 38], ['VX', 45], ['VY', 55], ['CRUISE', 73], ['VNE', 122]],
-    tips: 'No flaps, no electrics, no stall warning. On the ground the nose blocks the view ahead, so look out the side or <b>S-turn</b> while taxiing. Full power, ease the tail up with a little forward stick, hold right rudder, and it flies itself off at about 40 mph. Glide at 55 to 60 mph, then hold it off for a three-point landing.',
+    tips: 'No flaps, no electrics, no stall warning. On the ground the nose blocks the view ahead, so look out the side or <b>S-turn</b> while taxiing. Full power, ease the tail up with a little forward stick, hold right rudder, and it flies itself off at about 45 mph. Glide at 55 to 60 mph, then hold it off for a three-point landing.',
     stall: null, reg: 'N92436'
   }
 };
@@ -1099,7 +1108,7 @@ function altFace(g, cx, cy, r) {
   for (let i = 0; i < 50; i++) tick(g, cx, cy, r, i / 50 * Math.PI * 2, i % 5 ? .08 : .16, i % 5 ? r * .03 : r * .05);
   for (let i = 0; i < 10; i++) label(g, cx, cy, r * .7, i / 10 * Math.PI * 2, String(i), r * .24);
   text(g, cx, cy - r * .33, 'ALT', r * .13, '#b8b6ad');
-  g.fillStyle = '#000'; g.fillRect(cx + r * .28, cy - r * .1, r * .44, r * .2); text(g, cx + r * .5, cy, '30.02', r * .13, '#e8e4d4');
+  g.fillStyle = '#000'; g.fillRect(cx + r * .28, cy - r * .1, r * .44, r * .2); text(g, cx + r * .5, cy, '29.92', r * .13, '#e8e4d4');
 }
 function altNeedles(g, cx, cy, r, ft) {
   needle(g, cx, cy, r, (ft % 100000) / 100000 * Math.PI * 2, .9, r * .04, '#d8d6cc', 0);
@@ -1234,9 +1243,9 @@ for (const k in cabins) { cabins[k].p.visible = false; cockpit.add(cabins[k].p);
 /* ---------- panel artwork ---------- */
 // Positions are cabin coordinates in metres (the same frame as the 3D cabin). Static faces are drawn once to a background canvas.
 const ASI = {
-  j3: { unit: 'MPH', lo: 30, max: 140, step: 20, green: [38, 100], red: 122 }
+  j3: { unit: 'MPH', lo: 40, max: 140, step: 20, green: [38, 100], red: 122 }
 };
-const TACH = { j3: { max: 3500, green: [1600, 2300], red: 2300, ccw: true } };
+const TACH = { j3: { max: 3000, green: [1600, 2300], red: 2300, ccw: true } };
 const LAYOUT = {
   j3: { R: .027, items: [['tach', -.225, .355], ['asi', -.115, .355], ['compJ3', 0, .375, .036], ['alt', .115, .355], ['oil', .225, .355]] },
 };
@@ -1628,6 +1637,7 @@ const ac = { pos: new V3(), vel: new V3(), q: new Q(), w: new V3(), thr: 0, flap
   rpm: 0, mp: 29, thrust: 0, stalled: false, stallSide: 1, alpha: 0, beta: 0, ias: 0, V: 0, airTime: 0, runT: 0, fs: new V3(0, G, 0), contacts: 0,
   roll0: null, td: null, tdAnn: false };
 const inp = { elev: 0, ail: 0, rud: 0, brake: false };
+let trimHold = null;
 const _vb = new V3(), _qi = new Q(), _F = new V3(), _L = new V3(), _dq = new Q(), _ax = new V3(), _r = new V3(), _P = new V3(), _vp = new V3(), _ww = new V3(),
   _fw = new V3(), _lat = new V3(), _fc = new V3(), _tq = new V3(), _tb = new V3(), _air = new V3(), _up = new V3(), _tmp = new V3();
 function liftCoef(a, fl) {
@@ -1772,6 +1782,14 @@ function crash(reason) {
   setTimeout(() => { if (state === 'crashed') openMenu('crash', `Crashed · ${reason}`); }, 1500);
 }
 // trim and power for a steady glide at speed v (m/s) down a path of gamma radians, from the model itself
+// auto trim's target: the trim that balances pitch at speed v with the power that is set now, nudged by the speed
+// error and the climb rate so the hands-off phugoid dies out instead of swinging for minutes
+function autoTrimTarget(v) {
+  const fl = T.flaps[ac.flaps], qS = .5 * 1.225 * v * v * T.S, a = (T.mass * G / qS - T.cl0 - fl.cl) / T.k;
+  const tf = Math.max(0, engine(v, ac.pos.y, ac.thr, 0)) / T.eng.Ts, f = .5 * 1.225 * v * v / T.qRef, fc = f + T.slip * tf;
+  return clamp((a - T.a0 - fl.da) * f / fc / T.kE + AT_KP * (ac.ias - v) - AT_KD * ac.vel.y, -T.trimRange, T.trimRange);
+}
+const AT_KP = .02, AT_KD = .08;
 function solveTrim(v, flaps, gamma) {
   const fl = T.flaps[flaps], qS = .5 * 1.225 * v * v * T.S, cl = T.mass * G * Math.cos(gamma) / qS;
   const a = (cl - T.cl0 - fl.cl) / T.k, cd = T.cd0 + T.ki * cl * cl + fl.cd, D = qS * cd, need = D - T.mass * G * Math.sin(gamma);
@@ -1856,6 +1874,14 @@ function gatherInput(dt) {
   inp.elev = clamp(ks.elev + expo(stick.y) + (gp ? gp.elev : 0), -1, 1);
   inp.ail = clamp(ks.ail + expo(stick.x) + (gp ? gp.ail : 0), -1, 1);
   inp.rud = clamp(ks.rud + (gp ? gp.rud : 0), -1, 1);
+  // auto trim: let go of the stick in the air and the trim settles to hold the airspeed you were flying at
+  if (settings.autoTrim && !ac.onGround && !ac.crashed) {
+    if (Math.abs(inp.elev) > .05) trimHold = null;
+    else {
+      if (trimHold === null) trimHold = clamp(ac.ias, T.vRef * .65, T.vRef * 1.4);
+      ac.trim = approach(ac.trim, autoTrimTarget(trimHold), .5, dt);
+    }
+  } else trimHold = null;
   // auto rudder (on by default for touch): the stick steers on the ground and the ball is kept centred in the air
   if (settings.autoRud && Math.abs(inp.rud) < .05) inp.rud = ac.onGround ? clamp(inp.ail + 1.2 * ac.w.y, -1, 1) : clamp(ac.beta * 6, -1, 1);
   inp.brake = keys.has('KeyB') || keys.has('Space') || touchBrake || !!(gp && gp.brake);
@@ -1971,7 +1997,7 @@ function updateHUD() {
   let h = Math.round(heading()); if (h === 0) h = 360; eHdg.textContent = String(h).padStart(3, '0');
   eFlap.textContent = T.flaps.length > 1 ? T.flaps[ac.flaps].deg + '°' : '—';
   document.body.classList.toggle('noflaps', T.flaps.length < 2);
-  const W = WINDS[onMoon ? 'none' : settings.wind]; eWind.textContent = !W.kt ? 'CALM' : `${W.from}/${W.kt}${W.gust > 3 ? 'G' + (W.kt + W.gust) : ''}`;
+  const W = WINDS[onMoon ? 'none' : settings.wind]; eWind.textContent = !W.kt ? 'CALM' : `${W.from}/${W.kt}${W.gust > 3 ? 'G' + (W.kt + W.gust) : ''} KT`;
   syncThrottle();
 }
 function updateInstruments(dt) {
@@ -2062,30 +2088,10 @@ function openMenu(mode, msg) {
   (mode === 'pause' ? bResume : $('bApproach')).focus({ preventScroll: true });
 }
 function closeMenu() { menu.hidden = true; }
-// on phones, go fullscreen and hold landscape where the browser allows it. Browsers only allow this from a tap,
-// so it is asked for on every touch until it sticks. iPhone Safari has no fullscreen for pages: Add to Home Screen instead.
-const standalone = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone;
-function goFullscreen() {
-  const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
-  if (!document.body.classList.contains('touch') || standalone || document.fullscreenElement || document.webkitFullscreenElement || !req) return;
-  try {
-    const p = req.call(el, { navigationUI: 'hide' });
-    if (p && p.then) p.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
-  } catch (e) {}
-}
-window.addEventListener('pointerup', goFullscreen, { passive: true });
-let iosTipShown = false;
-function iosTip() {
-  if (iosTipShown || standalone || !/iPhone|iPod/.test(navigator.userAgent)) return;
-  iosTipShown = true; setTimeout(() => toast('For full screen on iPhone: Share → Add to Home Screen, then open it from there', 5200), 4800);
-}
 async function wake() {
-  iosTip();
-  // on phones, go fullscreen and hold landscape where the browser allows it (Android Chrome; iPhone Safari ignores it)
-  goFullscreen();
   try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch (e) {}
 }
-function syncRunwayLabels() { const r = windRunway(); $('bTakeoff').textContent = `Line up · Runway ${r}`; $('bApproach').textContent = `Short final · Runway ${r}`; }
+function syncRunwayLabels() { const r = windRunway(); $('bTakeoff').textContent = `▶ Line up · Runway ${r}`; $('bApproach').textContent = `▶ Short final · Runway ${r}`; }
 function begin(kind) {
   if (onMoon) { kind === 'runway' ? resetRunway() : resetApproach(); toast(`One-sixth gravity · it flies at about 40% of its Earth speeds · ${kind === 'runway' ? 'ease it off early' : 'slow and shallow'}`, 4600); }
   else if (kind === 'runway') { resetRunway(); toast(T.tail ? 'Full power · right rudder · tail up, then fly it off' : 'Full power · keep the nosewheel light · rotate at 55 KIAS', 4200); }
@@ -2106,6 +2112,8 @@ function bindToggle(id, key, after) {
 bindToggle('tSound', 'sound', () => { if (settings.sound) initAudio(); });
 bindToggle('tAuto', 'autoRud', () => document.body.classList.toggle('autorud', !!settings.autoRud));
 document.body.classList.toggle('autorud', !!settings.autoRud);
+bindToggle('tTrim', 'autoTrim', () => document.body.classList.toggle('autotrim', !!settings.autoTrim));
+document.body.classList.toggle('autotrim', !!settings.autoTrim);
 bindToggle('tData', 'data', () => document.body.classList.toggle('nodata', !settings.data));
 bindToggle('tHigh', 'high', () => { applyQuality(); resize(); });
 document.body.classList.toggle('nodata', !settings.data);
