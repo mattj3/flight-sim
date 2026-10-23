@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0c130e">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2000,6 +2001,9 @@ function initAudio() {
   if (au) { if (au.ctx.state === 'suspended') au.ctx.resume(); return; }
   try {
     const Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return;
+    // iPhone mutes Web Audio with the ring/silent switch unless the page asks for media playback
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+    unlockMediaAudio();
     const ctx = new Ctx(), master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
     const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 400; lp.Q.value = 3;
     const eg = ctx.createGain(); eg.gain.value = 0; lp.connect(eg); eg.connect(master);
@@ -2012,8 +2016,21 @@ function initAudio() {
     const wg = mk('bandpass', 650, .5), rg = mk('lowpass', 120, 1), rain = mk('bandpass', 2600, .4), drum = mk('lowpass', 500, .7);
     const so = ctx.createOscillator(); const sg = ctx.createGain(); sg.gain.value = 0; so.connect(sg); sg.connect(master); so.start();
     au = { ctx, master, lp, eg, o1, o2, o3, g3, wg, rg, so, sg, rain, drum };
+    if (ctx.state !== 'running') ctx.resume();
   } catch (e) { au = null; }
 }
+// older iPhones: a looping silent media element moves the page onto the media channel, which ignores the silent switch
+let silentEl = null;
+function unlockMediaAudio() {
+  if (silentEl || !/iPhone|iPad|iPod/.test(navigator.userAgent)) return;
+  const rate = 8000, n = rate / 2, b = new ArrayBuffer(44 + n * 2), v = new DataView(b), w = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+  silentEl = new Audio(URL.createObjectURL(new Blob([b], { type: 'audio/wav' }))); silentEl.loop = true; silentEl.setAttribute('playsinline', '');
+  silentEl.play().catch(() => { silentEl = null; });
+}
+// browsers suspend audio when the tab is hidden or a call comes in; pick it back up on the next touch
+window.addEventListener('pointerdown', () => { if (au && au.ctx.state !== 'running' && settings.sound) au.ctx.resume(); }, { passive: true });
 function updateAudio() {
   if (!au) return;
   const t = au.ctx.currentTime, on = settings.sound && state === 'flying', inside = view === 'cockpit';
@@ -2045,11 +2062,27 @@ function openMenu(mode, msg) {
   (mode === 'pause' ? bResume : $('bTakeoff')).focus({ preventScroll: true });
 }
 function closeMenu() { menu.hidden = true; }
+// on phones, go fullscreen and hold landscape where the browser allows it. Browsers only allow this from a tap,
+// so it is asked for on every touch until it sticks. iPhone Safari has no fullscreen for pages: Add to Home Screen instead.
+const standalone = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone;
+function goFullscreen() {
+  const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!document.body.classList.contains('touch') || standalone || document.fullscreenElement || document.webkitFullscreenElement || !req) return;
+  try {
+    const p = req.call(el, { navigationUI: 'hide' });
+    if (p && p.then) p.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
+  } catch (e) {}
+}
+window.addEventListener('pointerup', goFullscreen, { passive: true });
+let iosTipShown = false;
+function iosTip() {
+  if (iosTipShown || standalone || !/iPhone|iPod/.test(navigator.userAgent)) return;
+  iosTipShown = true; setTimeout(() => toast('For full screen on iPhone: Share → Add to Home Screen, then open it from there', 5200), 4800);
+}
 async function wake() {
+  iosTip();
   // on phones, go fullscreen and hold landscape where the browser allows it (Android Chrome; iPhone Safari ignores it)
-  if (document.body.classList.contains('touch') && !document.fullscreenElement && document.documentElement.requestFullscreen) {
-    document.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {});
-  }
+  goFullscreen();
   try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch (e) {}
 }
 function syncRunwayLabels() { const r = windRunway(); $('bTakeoff').textContent = `Line up · Runway ${r}`; $('bApproach').textContent = `Short final · Runway ${r}`; }

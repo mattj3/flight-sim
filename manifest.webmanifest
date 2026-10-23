@@ -1,0 +1,10 @@
+{
+  "name": "R-Law Fly-In",
+  "short_name": "R-Law Fly-In",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0c130e",
+  "theme_color": "#0c130e"
+}
