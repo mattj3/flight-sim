@@ -186,8 +186,8 @@ body:not(.touch) .touch-help{display:none}
     <div class="acsel" role="radiogroup" aria-label="Aircraft" id="acsel"></div>
     <div class="actions">
       <button class="primary" id="bResume" type="button" hidden>Resume flight</button>
-      <button class="primary" id="bTakeoff" type="button">Line up · Runway 20</button>
-      <button class="secondary" id="bApproach" type="button">Short final · Runway 20</button>
+      <button class="primary" id="bApproach" type="button">Short final · Runway 20</button>
+      <button class="secondary" id="bTakeoff" type="button">Line up · Runway 20</button>
     </div>
     <div class="plcap" id="plcap">V-SPEEDS · MPH IAS</div>
     <div class="placard" id="placard"></div>
@@ -2059,7 +2059,7 @@ function openMenu(mode, msg) {
   if (mode === 'pause') state = 'paused';
   menu.hidden = false; mStatus.textContent = msg || ''; mStatus.hidden = !msg; bResume.hidden = mode !== 'pause';
   syncRunwayLabels();
-  (mode === 'pause' ? bResume : $('bTakeoff')).focus({ preventScroll: true });
+  (mode === 'pause' ? bResume : $('bApproach')).focus({ preventScroll: true });
 }
 function closeMenu() { menu.hidden = true; }
 // on phones, go fullscreen and hold landscape where the browser allows it. Browsers only allow this from a tap,
