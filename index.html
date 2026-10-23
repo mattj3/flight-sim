@@ -977,7 +977,7 @@ function buildModel(t) {
   bar([-.12, -.37, -1.12], [.12, -.37, -1.12], .05, 0x6a5a4a, root, 12, 1, 'metal');
   // fuel cap ahead of the windshield, with the wire-and-cork float gauge sticking up through it
   { const cap = new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, .03, 14), pmat(0xb8babc, 'metal')); cap.position.set(0, .54, -1.45); root.add(cap); }
-  bar([0, .54, -1.45], [0, .74, -1.45], .004, 0x1a1a1a, root, 4); bar([0, .74, -1.45], [.05, .74, -1.45], .004, 0x1a1a1a, root, 4);
+  bar([0, .54, -1.45], [0, .63, -1.45], .0022, 0x1a1a1a, root, 4); bar([0, .63, -1.45], [.03, .63, -1.45], .0022, 0x1a1a1a, root, 4);
   // wings: constant 63 in chord, 1° of dihedral, rounded tips; ailerons outboard with a visible hinge gap
   const wy = 1.0, zle = -.48, ch = 1.6, dih = .017;
   for (const s of [-1, 1]) {
