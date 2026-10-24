@@ -818,8 +818,8 @@ const TYPES = {
     flaps: [{ deg: 0, cl: 0, cd: 0, da: 0 }],
     eng: { cs: false, P: 48500, Ts: 1600, Vc: 30, idle: 600, rpmS: 2150, rpmMax: 2300, kv: 6, cyl: 4 },
     tail: true, threePt: 11.5, mainL: [-.9, -1.15, -.42], tailZ: 4.5, wheelR: .21, defl: [.08, .04], zeta: [.55, .5],
-    steer: 22, muLat: [.55, .4], muRoll: .045, muBrake: .26, sink: 3.4, prop: [0, .1, -2.12, .91], tip: [5.37, 1.02, .3],
-    vRef: 30, kA: 9, kE: .36, a0: .02, roll: 2.4, rollD: 3.6, yaw: 1.9, slip: .3, pfac: .1, gyro: .3, trimRange: .4,
+    steer: 22, steerV: 10, muLat: [.55, .4], muRoll: .045, muBrake: .26, sink: 3.4, prop: [0, .1, -2.12, .91], tip: [5.37, 1.02, .3],
+    vRef: 30, kA: 9, kE: .36, a0: .02, roll: 2.4, rollD: 3.6, yaw: 1.9, advY: .32, slip: .3, pfac: .1, gyro: .3, trimRange: .4,
     eye: [0, .68, .78], fov: 64, tilt: -.05,
     placard: [['VS', 38], ['VX', 45], ['VY', 55], ['CRUISE', 73], ['VNE', 122]],
     tips: 'No flaps, no electrics, no stall warning. On the ground the nose blocks the view ahead, so look out the side or <b>S-turn</b> while taxiing. Full power, ease the tail up with a little forward stick, hold right rudder, and it flies itself off at about 45 mph. Glide at 55 to 60 mph, then hold it off for a three-point landing.',
@@ -832,8 +832,8 @@ const TYPES = {
     flaps: [{ deg: 0, cl: 0, cd: 0, da: 0 }, { deg: 10, cl: .2, cd: .004, da: -.01 }, { deg: 20, cl: .4, cd: .012, da: -.02 }, { deg: 30, cl: .58, cd: .03, da: -.03 }, { deg: 40, cl: .7, cd: .055, da: -.035 }],
     eng: { cs: true, P: 171500, Ts: 4000, eta: .8, gov: 2400, idle: 650, cyl: 6 },
     tail: true, threePt: 11.5, mainL: [-1.25, -1.25, -.55], tailZ: 5.25, wheelR: .28, defl: [.1, .05], zeta: [.5, .5],
-    steer: 20, muLat: [.6, .45], muRoll: .04, muBrake: .35, sink: 3.4, prop: [0, 0, -2.5, 1.04], tip: [5.46, .98, -.3],
-    vRef: 40, kA: 9, kE: .34, a0: 0, roll: 2.2, rollD: 3.4, yaw: 2.0, slip: .32, pfac: .18, gyro: .4, trimRange: .4,
+    steer: 20, steerV: 10, muLat: [.6, .45], muRoll: .04, muBrake: .35, sink: 3.4, prop: [0, 0, -2.5, 1.04], tip: [5.46, .98, -.3], flapT: 9,
+    vRef: 40, kA: 9, kE: .34, a0: 0, roll: 2.2, rollD: 3.4, yaw: 2.0, slip: .32, pfac: .18, gyro: .4, trimRange: .4, atHi: 2.2,
     eye: [-.27, .7, .1], fov: 62, tilt: -.03,
     placard: [['VSO', 48], ['VX', 61], ['VY', 78], ['CRUISE', 142], ['VNE', 171]],
     tips: 'Six seats, 230 hp and a constant-speed prop: the blue knob stays full forward. Full power, hold right rudder, let the tail come up and it flies off at about 60 knots; climb at 78. Approach with 20° of flap at 70 knots, 65 over the fence, then a three-point landing, or wheel it on with a touch of forward yoke. The horn sounds a few knots above the stall. Flaps go down to 40° but not above 87 knots.',
@@ -847,8 +847,8 @@ const TYPES = {
     flaps: [{ deg: 0, cl: 0, cd: 0, da: 0, lab: 'UP' }, { deg: 18, cl: .45, cd: .02, da: -.025, lab: '50%', vfe: 165 }, { deg: 36, cl: .78, cd: .09, da: -.045, lab: '100%', vfe: 145 }],
     eng: { turbo: true, P: 13.69e6, Ts: 160000, eta: .8, gov: 1021, idle: 735, cyl: 8, nb: 4, rev: .45 },
     tail: false, noseZ: -8.57, mainL: [-2.17, -2.75, 1.2], wheelR: .71, defl: [.25, .2], zeta: [.55, .6], toFlaps: 1,
-    steer: 25, muLat: [.6, .5], muRoll: .045, muBrake: .4, sink: 4.6, prop: [9.9, 1.3, -4.0, 2.06], tip: [20.2, 2.15, 1.5], tailSkid: [0, -.6, 9.5],
-    vRef: 70, kA: 4, kE: .4, a0: 0, roll: .85, rollD: 1.5, yaw: 1.2, slip: .1, pfac: .03, gyro: .02, trimRange: .6,
+    steer: 25, muLat: [.6, .5], muRoll: .045, muBrake: .4, sink: 4.6, prop: [9.9, 1.3, -4.0, 2.06], tip: [20.2, 2.15, 1.5], tailSkid: [0, -.6, 9.5], flapT: 10,
+    vRef: 70, kA: 4, kE: .4, a0: 0, roll: .85, rollD: 1.5, yaw: 1.2, slip: .1, pfac: .03, gyro: .02, trimRange: .6, atHi: 2.4,
     eye: [-.55, 1.6, -10.9], fov: 72, tilt: -.2, clearR: 3, scale: 2.8, discK: .5,
     placard: [['VSO', 86], ['VS', 99], ['VR', 95], ['VREF', 103], ['VMO', 320]],
     tips: 'Four turboprops and 132 feet of wing, flown at an assault-landing weight of 101,000 lb. Flaps start at 50%. Full power, steer with rudder (it drives the nosewheel), rotate at about 95 knots and let it climb away at 130 to 150. Approach with 100% flap at about 103 knots and plenty of power, touch down near 95, then throttle to idle and hold the brakes: the props go into reverse. Flaps no faster than 165 knots for 50% and 145 for 100%.',
@@ -863,8 +863,8 @@ const TYPES = {
     flaps: [{ deg: 0, cl: 0, cd: 0, da: 0, lab: 'UP' }, { deg: 35, cl: .72, cd: .09, da: .02, lab: 'DN', vfe: 225 }],
     eng: { jet: true, Tmil: 109900, Tab: 186000, Ts: 109900, idle: 62, gov: 100 },
     tail: false, noseZ: -6.05, mainL: [-2.5, -2.3, 1.0], wheelR: .47, defl: [.32, .26], zeta: [.7, .7], toFlaps: 1, toV: 72,
-    steer: 35, steerV: 10, muLat: [.7, .6], muRoll: .03, muBrake: .45, sink: 7.6, prop: null, tip: [9.67, .3, .93], tailSkid: [0, -.78, 7.9], belly: [0, -1.0, .5],
-    vRef: 67, kA: 6, kE: .36, a0: .05, roll: 4.5, rollD: 2.8, rollQ: 8, yaw: .9, slip: 0, pfac: 0, gyro: 0, trimRange: .7, gMax: 6.5, atHi: 4.6,
+    steer: 35, steerV: 10, muLat: [.7, .6], muRoll: .03, muBrake: .45, sink: 7.6, prop: null, tip: [9.67, .3, .93], tailSkid: [0, -.78, 7.9], belly: [0, -1.0, .5], flapT: 10,
+    vRef: 67, kA: 6, kE: .36, a0: .05, roll: 3.3, rollD: 2.0, rollQ: 8, yaw: .9, advY: .08, slip: 0, pfac: 0, gyro: 0, trimRange: .7, gMax: 6.5, atHi: 4.6,
     retract: true, hook: { p: [0, -.32, 5.6], L: 2.6, down: 40 }, sweep: true, onSpeed: 15,
     eye: [0, .98, -6.05], fov: 70, tilt: -.2, clearR: 2.2, scale: 1.6,
     placard: [['VS APPR', 112], ['ON-SPEED', 130], ['FLAPS', 225], ['GEAR', 280], ['MACH', '2.34']],
@@ -2841,8 +2841,14 @@ function windVec(agl) {
   const n1 = vnoise(simT * .23, 3.3) * 2 - 1, n2 = vnoise(simT * .11 + 40, 7.1) * 2 - 1;
   const spd = Math.max(0, W.kt / KT + W.gust / KT * Math.max(-.4, n1)) * (atSea ? 1 : (.45 + .55 * sstep(0, 70, agl)) * (inClearing(rwU(ac.pos.x, ac.pos.z), rwV(ac.pos.x, ac.pos.z)) && agl < 18 ? .75 : 1));
   const from = (W.from + n2 * (atSea ? 1.5 : 9)) * D2R;
-  return _w.set(-Math.sin(from) * spd, 0, Math.cos(from) * spd);
+  _w.set(-Math.sin(from) * spd, 0, Math.cos(from) * spd);
+  // the burble: the ship's wake of disturbed air behind the ramp, rougher in the groove than out at the start (step doubles
+  // the turbulence at its peak, 900 ft out). The mean settle is left out: it moves the ball a wire's worth in close.
+  burbleK = 0;
+  if (atSea && ac.pos.y < DECK + 45) { const u = ldU(ac.pos.x, ac.pos.z); if (u < 0 && u > -550) burbleK = Math.sin(Math.PI * -u / 550) * (1 - sstep(DECK + 25, DECK + 45, ac.pos.y)); }
+  return _w;
 }
+let burbleK = 0;
 
 /* ---------- flight model ---------- */
 let T = TYPES.j3;
@@ -2859,6 +2865,17 @@ function liftCoef(a, fl) {
   if (a < Nn) { const peak = cl0 + T.k * Nn, t = sstep(-Nn, -Nn + .18, -a); return peak * (1 - t) + .95 * Math.sin(2 * a) * t; }
   return cl0 + T.k * a;
 }
+// the flaps travel at their motor's rate, so the lift, drag and trim change arrive over several seconds instead of at once
+const _fl = { deg: 0, cl: 0, cd: 0, da: 0 };
+function flapNow(t, dt) {
+  const n = t.flaps.length - 1; if (!n || !t.flapT) return t.flaps[ac.flaps];
+  if (ac.flapPos === undefined) ac.flapPos = ac.flaps;
+  ac.flapPos = approach(ac.flapPos, ac.flaps, n / t.flapT, dt);
+  const i = Math.min(Math.floor(ac.flapPos), n - 1), k = ac.flapPos - i, a = t.flaps[i], b = t.flaps[i + 1];
+  if (k < 1e-6) return a; if (k > 1 - 1e-6) return b;
+  _fl.deg = lerp(a.deg, b.deg, k); _fl.cl = lerp(a.cl, b.cl, k); _fl.cd = lerp(a.cd, b.cd, k); _fl.da = lerp(a.da, b.da, k);
+  return _fl;
+}
 function engine(V, alt, thr, dt) {
   const e = T.eng, pAmb = 29.92 * Math.exp(-alt / 8434), sig = Math.exp(-alt / 9000);
   let thrust, rpmT;
@@ -2873,7 +2890,7 @@ function engine(V, alt, thr, dt) {
       ac.ab = approach(ac.ab || 0, ac.spool > .95 ? abT : 0, 1.4, dt);
     }
     const sp = dt ? ac.spool : coreT, ab = dt ? ac.ab : abT, mach = V / sos(alt);
-    thrust = (e.Tmil * (.035 + .965 * Math.pow(sp, 2.2)) + ab * (e.Tab - e.Tmil)) * Math.pow(sig, .75) * (1 + .2 * mach * mach);
+    thrust = (e.Tmil * (.035 + .965 * Math.pow(sp, 2.2)) * (1 - .3 * mach + .2 * mach * mach) + ab * (e.Tab - e.Tmil) * (1 + .2 * mach * mach)) * Math.pow(sig, .75);
     if (dt) ac.rpm = e.idle + (e.gov - e.idle) * sp + 2 * ab;
     return thrust;
   } else if (e.turbo) {
@@ -2887,9 +2904,9 @@ function engine(V, alt, thr, dt) {
     rpmT = ac.onGround && thr < .15 ? e.idle : e.gov;                                                // low-speed ground idle, then 100%
   } else if (e.cs) {
     ac.mp = lerp(11 + V * .01, pAmb - .8, thr);
-    const pf = clamp((ac.mp - 9.5) / (29.1 - 9.5), 0, 1);
+    const pf = clamp((ac.mp - 9.5) / (29.1 - 9.5), 0, 1) * (1 + alt / 30000);   // less exhaust back pressure up high: about 8% more power at 8,000 ft for the same manifold pressure
     const T1 = e.Ts * Math.max(pf, .02), T2 = e.eta * e.P * Math.max(pf, .02) / Math.max(V, 1);
-    thrust = Math.pow(Math.pow(T1, -3) + Math.pow(T2, -3), -1 / 3) - (1 - pf) * e.Ts * .05 * clamp(V / 40, 0, 1.5);
+    thrust = Math.pow(Math.pow(T1, -3) + Math.pow(T2, -3), -1 / 3) - clamp((.3 - pf) / .2, 0, 1) * e.Ts * .12 * clamp(V / 40, 0, 1.5);   // near idle the disc windmills at the low-pitch stop: a lot of drag
     rpmT = Math.min(e.gov, e.idle + (e.gov - e.idle) * (pf * 1.6 + V / 70));
   } else {
     ac.mp = pAmb;
@@ -2909,7 +2926,7 @@ function step(dt) {
   const q = ac.q, w = ac.w, t = T;
   _qi.copy(q).invert();
   const gh0 = groundHeight(ac.pos.x, ac.pos.z), agl = ac.pos.y - gh0;
-  const W = windVec(agl), tb = windCfg().turb * (wx.turb || 1) * sstep(2, 40, agl) * (1 - sstep(900, 1500, agl));
+  const W = windVec(agl), tb = windCfg().turb * (wx.turb || 1) * sstep(2, 40, agl) * (1 - sstep(900, 1500, agl)) * (1 + burbleK);
   _air.copy(ac.vel).sub(W);
   if (tb) { _air.x -= tb * (vnoise(simT * .9, ac.pos.z * .01) - .5) * 1.4; _air.y -= tb * ((vnoise(ac.pos.x * .006 + simT * .5, ac.pos.z * .006) - .5) * 1.6 + (vnoise(ac.pos.x / 400, ac.pos.z / 400) - .5) * 1.2); _air.z -= tb * (vnoise(ac.pos.x * .01, simT * .8) - .5) * 1.4; }
   _vb.copy(_air).applyQuaternion(_qi);
@@ -2923,7 +2940,7 @@ function step(dt) {
     sweepState(t);
   }
   const thrust = engine(V, alt, ac.thr, dt); ac.thrust = thrust;
-  const fl = t.flaps[ac.flaps], cl = liftCoef(alpha, fl), stalled = alpha > t.stallA - fl.deg * .0012 + .02;
+  const fl = flapNow(t, dt), cl = liftCoef(alpha, fl), stalled = alpha > t.stallA - fl.deg * .0012 + .02;
   const hw = Math.max(.3, agl + .8), ge = (16 * hw / t.span) ** 2, phi = ge / (1 + ge);
   let cd = t.cd0 + t.ki * phi * cl * cl + fl.cd + (stalled ? .1 : 0);
   if (t.retract) cd += .02 * ac.gearPos;
@@ -2961,7 +2978,8 @@ function step(dt) {
     const vf = _vp.dot(_fw), vl = _vp.dot(_lat);
     let bk = 0; if (inp.brake && wh.main) bk = wh.side < 0 ? clamp(1 - inp.rud, 0, 1) : clamp(1 + inp.rud, 0, 1);
     const mu = surfaceMu(_P.x, _P.z) + bk * t.muBrake * (wx.grip || 1);
-    const Ff = -mu * N * clamp(vf / .25, -1, 1), Fl = -wh.mu * (wx.grip || 1) * N * clamp(vl / .35, -1, 1);
+    const castor = wh.steer === 1 && Math.abs(vf) > 1 && Math.abs(Math.atan2(vl, Math.abs(vf))) > (t.steer + 12) * D2R ? .15 : 1;   // a tailwheel swung past its steering range unlocks and castors: the ground loop
+    const Ff = -mu * N * clamp(vf / .25, -1, 1), Fl = -wh.mu * castor * (wx.grip || 1) * N * clamp(vl / .35, -1, 1);
     _fc.copy(n).multiplyScalar(N).addScaledVector(_fw, Ff).addScaledVector(_lat, Fl);
     _F.add(_fc); _tq.add(_tmp.copy(_r).cross(_fc));
     _tmp.copy(_fc).applyQuaternion(_qi); ac.fs.add(_tmp);
@@ -2979,7 +2997,7 @@ function step(dt) {
   if (t.gMax && V > 20 && fc > 1e-3) { const ag = (t.gMax * t.mass * G / (qbar * t.S) - t.cl0 - fl.cl) / t.k, an = (-3 * t.mass * G / (qbar * t.S) - t.cl0 - fl.cl) / t.k, dq = (3.2 * vr + .6) * G / (V * f * t.kA);
     elev = clamp(elev, (an - t.a0 - fl.da - 4 * dq) * f / (fc * t.kE) - ac.trim, Math.max(-1, (ag - t.a0 - fl.da + (t.gMax - 1) * dq) * f / (fc * t.kE) - ac.trim)); }
   let ax = f * t.kA * (t.a0 + fl.da - alpha) + fc * t.kA * t.kE * (elev + ac.trim) - (3.2 * vr + .6) * w.x + _tb.x / t.I[0];
-  let ay = fc * -t.yaw * inp.rud + f * (-3.2 * beta + .25 * inp.ail) - (2.2 * vr + .6) * w.y + _tb.y / t.I[1];
+  let ay = fc * -t.yaw * inp.rud + f * (-3.2 * beta + (t.advY === undefined ? .25 : t.advY) * inp.ail) - (2.2 * vr + .6) * w.y + _tb.y / t.I[1];
   ay += t.pfac * Math.max(0, thrust) / t.eng.Ts * (.3 + .7 * (1 - sstep(8, 40, V))) + t.gyro * -w.x * ac.rpm / 2700;
   const fr = t.rollQ ? f / (1 + f / t.rollQ) * (1 - .35 * ((ac.sweep || 20) - 20) / 48) : f;   // roll authority levels off at high speed
   let az = -fr * t.roll * inp.ail + f * .8 * beta - (t.rollD * vr + .6) * w.z + _tb.z / t.I[2];
@@ -3012,7 +3030,7 @@ function step(dt) {
   }
   if (contacts === 0 && agl < .2 && pondAt(ac.pos.x, ac.pos.z)) return crash('Ditched in a stock pond');
   // touchdown, landing and takeoff bookkeeping
-  if (mainC && ac.airTime > (atSea ? .6 : 2)) { if (impact > t.sink) return crash(`Hard landing · ${Math.round(impact * FPM)} fpm`); landed(impact); }
+  if (mainC && ac.airTime > (atSea ? .6 : 2)) { if (impact > t.sink) return crash(atSea && ac.pos.z > 155 ? 'Ramp strike' : `Hard landing · ${Math.round(impact * FPM)} fpm`); landed(impact); }
   if (contacts) { ac.airTime = 0; } else ac.airTime += dt;
   ac.onGround = contacts > 0;
   trackRoll();
@@ -3128,7 +3146,7 @@ function autoTrimTarget(v) {
 const AT_KP = .02, AT_KD = .08;
 function solveTrim(v, flaps, gamma) {
   const fl = T.flaps[flaps], qS = .5 * 1.225 * v * v * T.S, cl = T.mass * G * Math.cos(gamma) / qS;
-  const a = (cl - T.cl0 - fl.cl) / T.k, cd = T.cd0 + T.ki * cl * cl + fl.cd, D = qS * cd, need = D - T.mass * G * Math.sin(gamma);
+  const a = (cl - T.cl0 - fl.cl) / T.k, cd = T.cd0 + T.ki * cl * cl + fl.cd + (T.retract ? .02 * ac.gear : 0), D = qS * cd, need = D - T.mass * G * Math.sin(gamma);
   let thr = 0; for (let k = 0; k <= 100; k++) { if (engine(v, FIELD, k / 100, 0) >= need) { thr = k / 100; break; } thr = 1; }
   const tf = Math.max(0, engine(v, FIELD, thr, 0)) / T.eng.Ts, f = .5 * 1.225 * v * v / T.qRef, fc = f + T.slip * tf;
   const trim = clamp(((a - T.a0 - fl.da) * f / fc) / T.kE, -T.trimRange, T.trimRange);
@@ -3163,17 +3181,17 @@ function resetRunway() {
     const r = windRunway(), u = r === '20' ? RW_LEN / 2 - 35 : -RW_LEN / 2 + 35;
     placeOnGround(u, 0, r === '20' ? 200 : 20);
   }
-  ac.thr = 0; ac.flaps = T.toFlaps || 0;
+  ac.thr = 0; ac.flaps = ac.flapPos = T.toFlaps || 0;
   ac.trim = solveTrim(T.toV || T.vRef * .78, ac.flaps, 0).trim; ac.onGround = true; ac.rpm = T.eng.idle; ac.runT = 0;
 }
-const APPR = { j3: { v: 25.5, fl: 0 }, c180: { v: 36, fl: 2 }, c130: { v: 53, fl: 2 }, f14: { v: 66.9, fl: 1, gp: 3, d: 2600 } };
+const APPR = { j3: { v: 25.5, fl: 0 }, c180: { v: 36, fl: 2 }, c130: { v: 53, fl: 2 }, f14: { v: 66.9, fl: 1, gp: 3.5, d: 2300, aim: 140 } };   // the jet aims long and a little steeper, over the trees at the end of the strip
 // at sea: the Tomcat starts a mile behind the ship on the 3.5° glideslope down the angled deck, hook down, with the
 // 27 knots over the deck already in its speed; hookless types fly a slower, shorter final down the straight deck
 function resetSea() {
   const A = APPR[T.id], Va = A.v, W = WINDS.sea.kt / KT, hook = !!T.hook;
   const dx = hook ? LDx : 0, dz = hook ? LDz : -1, vg = Va - W * (hook ? 1 : Math.cos(ANG)), gpd = hook ? GS : 4 * D2R;
   const d = hook ? 1850 : clamp(vg * 35, 250, 1500), gam = Math.asin(clamp(vg * Math.tan(gpd) / Va, 0, .3));
-  ac.flaps = A.fl; const st = solveTrim(Va, A.fl, gam);
+  ac.flaps = ac.flapPos = A.fl; const st = solveTrim(Va, A.fl, gam);
   let x, z, y;
   if (hook) { const u = -d; x = ldX(u, 0); z = ldZ(u, 0); y = LENS.y + (LENS.u - (u + 6)) * Math.tan(GS) - 1.71; ac.hook = true; ac.hookPos = 1; }
   else { x = AXIAL_X; z = 120 + d; y = DECK + 3 + d * Math.tan(gpd); }
@@ -3188,10 +3206,10 @@ function resetSea() {
 function resetApproach() {
   resetCommon();
   if (atSea) return resetSea();
-  const r = windRunway(), A = APPR[T.id], gp = (A.gp || 4.2) * D2R, d = A.d || 1500, aim = 60, s = r === '20' ? 1 : -1;
+  const r = windRunway(), A = APPR[T.id], gp = (A.gp || 4.2) * D2R, d = A.d || 1500, aim = A.aim || 60, s = r === '20' ? 1 : -1;
   const u = s * (RW_LEN / 2 - aim + d);
   const Av = A.v * Math.sqrt(G / 9.81); // the same lift with a sixth of the weight: about 40% of the speed on the Moon
-  ac.flaps = A.fl; const st = solveTrim(Av, A.fl, gp);
+  ac.flaps = ac.flapPos = A.fl; const st = solveTrim(Av, A.fl, gp);
   const hdg = r === '20' ? 200 : 20, dirx = -s * RDx, dirz = -s * RDz;
   ac.pos.set(rwX(u, 0), FIELD + Math.tan(gp) * d + 3, rwZ(u, 0));
   ac.vel.set(dirx * Av * Math.cos(gp), -Av * Math.sin(gp), dirz * Av * Math.cos(gp));
