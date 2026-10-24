@@ -3514,7 +3514,9 @@ function readGamepad(dt) {
     ac.thr = clamp(ac.thr + (b(7) - b(6)) * .6 * dt, 0, 1);
     if (press(0)) setFlaps(ac.flaps + 1);
     if (press(2)) setFlaps(ac.flaps - 1);
-    if (press(3)) cycleView();
+    // a flight stick's head buttons get bumped while you steer and shoot, and the next view (the flight line) is a long zoom lens,
+    // so only a standard gamepad changes the view; on a stick use C or the view button
+    if (press(3) && p.mapping === 'standard') cycleView();
     if (press(12)) ac.trim = clamp(ac.trim - .02, -T.trimRange, T.trimRange);
     if (press(13)) ac.trim = clamp(ac.trim + .02, -T.trimRange, T.trimRange);
     if (press(5)) fireJato();
@@ -3629,6 +3631,9 @@ thrEl.addEventListener('pointermove', e => { if (e.pointerId === thrId) moveThr(
 thrEl.addEventListener('pointerup', () => thrId = null); thrEl.addEventListener('pointercancel', () => thrId = null);
 function syncThrottle() { const h = thrEl.clientHeight || 170; thrKnob.style.bottom = (ac.thr * (h - 26) + 2) + 'px'; thrFill.style.height = (ac.thr * 100) + '%'; thrKnob.textContent = T.eng.jet && ac.thr > .8 ? 'AB' : ac.rev > .01 ? 'REV' : Math.round(ac.thr * 100);
   if (T.retract) { $('bGear').classList.toggle('on', !!ac.gear); $('bHook').classList.toggle('on', !!ac.hook); } }
+// iPhone Safari ignores user-scalable=no, so two thumbs down at once (stick plus GUNS or throttle) can pinch-zoom the page
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('touchmove', e => { if (e.touches.length > 1 && !e.target.closest('#menu')) e.preventDefault(); }, { passive: false });
 function hold(el, on, off) {
   el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); el.classList.add('on'); on(); });
   const end = () => { el.classList.remove('on'); off(); };
