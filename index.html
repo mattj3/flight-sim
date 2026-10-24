@@ -3214,7 +3214,7 @@ function step(dt) {
   if (inp.gun && !ac.crashed && ac.ammo > 0 && dt) {
     const g = gunOf(t), rps = g.rpm / 60 * g.p.length, Fr = rps * g.m * g.v * 1.3;
     ac.gunAcc += rps * dt;
-    while (ac.gunAcc >= 1 && ac.ammo > 0) { ac.gunAcc -= 1; if (!kids) ac.ammo--; fireRound(g, g.p[ac.gunI++ % g.p.length], ac.gunAcc / rps); if (!ac.ammo) toast(`Out of ammunition · ${g.rounds} rounds fired`, 2000); }
+    while (ac.gunAcc >= 1 && ac.ammo > 0) { ac.gunAcc -= 1; if (!kids) ac.ammo--; fireRound(g, ac.gunI++, ac.gunAcc / rps); if (!ac.ammo) toast(`Out of ammunition · ${g.rounds} rounds fired`, 2000); }
     let mx = 0, my = 0; for (const p of g.p) { mx += p[0] / g.p.length; my += p[1] / g.p.length; }
     _F.z += Fr; gq = my * Fr; gy = -mx * Fr; ac.gunF = Fr;
   }
@@ -3762,11 +3762,12 @@ const flashes = [];
 const hits = []; let hitI = 0, hitN = 0;
 { const g = new THREE.IcosahedronGeometry(1, 1); for (let i = 0; i < 70; i++) { const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: 0x9a8462, transparent: true, opacity: 0, depthWrite: false })); m.visible = false; scene.add(m); hits.push({ m, t: 99, k: 1, sp: false }); } }
 const _gq = new THREE.Quaternion(), _gm = new THREE.Matrix4(), _gs = new V3(), _gz = new V3(0, 0, 1), _gd = new V3(), _gp = new V3();
-function fireRound(g, mp, ago) {
-  const r = rounds[rI++ % NR];
+function fireRound(g, idx, ago) {
+  // the guns take turns, and each one has its own tracer every few rounds
+  const r = rounds[rI++ % NR], mp = g.p[idx % g.p.length];
   r.v.set(0, 0, -g.v).applyQuaternion(ac.q).add(ac.vel);
   r.p.set(...mp).applyQuaternion(ac.q).add(ac.pos).addScaledVector(r.v, ago);
-  r.t = ago; r.tr = (ac.gunI % g.tr) === 0; r.big = g.m > .07;
+  r.t = ago; r.tr = Math.floor(idx / g.p.length) % g.tr === 0; r.big = g.m > .07;
 }
 function clearRounds() { for (const r of rounds) r.t = 99; for (const h of hits) { h.t = 99; h.m.visible = false; } trMesh.count = 0; for (const f of flashes) f.visible = false; }
 function gunHit(x, y, z, big) {
@@ -3845,23 +3846,64 @@ function buildTargets() {
 }
 function hitTarget(p0, p1) {
   for (const tg of targets) {
-    if (tg.dead > 0) continue;
+    if (tg.dead > 0 || tg.fall) continue;
     // distance from the plane's centre to this bit of the round's path; 10 m is generous on purpose
     _gd.subVectors(p1, p0); const L2 = _gd.lengthSq(); let f = L2 > 0 ? _gs.subVectors(tg.g.position, p0).dot(_gd) / L2 : 0; f = clamp(f, 0, 1);
     if (_gs.copy(p0).addScaledVector(_gd, f).distanceTo(tg.g.position) < 10) {
       tg.hp++; tg.flash = .08;
-      if (tg.hp >= 4) { tg.dead = 6; tg.g.visible = false; popped++; toast(popped === 1 ? 'Got one!' : `Got one! ${popped} down`, 1500);
-        for (let k = 0; k < 8; k++) { const h = hits[hitI++ % hits.length]; h.t = 0; h.k = 3.5; h.sp = false; h.m.visible = true; h.m.position.copy(tg.g.position).add(_gs.set((Math.random() - .5) * 10, (Math.random() - .5) * 6, (Math.random() - .5) * 10)); h.m.material.color.set(k % 2 ? tg.c : 0xffffff); } }
+      if (tg.hp >= 4) { popped++; toast(popped === 1 ? 'Got one!' : `Got one! ${popped} down`, 1500);
+        // it goes down trailing smoke: keeps its speed along the circle, noses over, rolls, and falls
+        const dir = Math.sign(tg.w); tg.fall = { v: new V3(-Math.sin(tg.a) * dir, 0, Math.cos(tg.a) * dir).multiplyScalar(26), roll: (Math.random() < .5 ? -1 : 1) * (1.5 + Math.random()), pitch: 0, t: 0 }; tg.smT = 0; }
       return true;
     }
   }
   return false;
 }
+// smoke and fire for shot-down targets: a dark trail on the way down, then a fireball and a column of smoke where it hits
+const tsm = []; let tsmI = 0;
+{ const g = new THREE.IcosahedronGeometry(1, 1); for (let i = 0; i < 160; i++) { const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: 0x333333, transparent: true, opacity: 0, depthWrite: false })); m.visible = false; scene.add(m); tsm.push({ m, t: 99, life: 4, k: 1, up: 1, fire: false }); } }
+function puff(pos, k, life, up, fire, spread) {
+  const p = tsm[tsmI++ % tsm.length]; p.t = 0; p.k = k; p.life = life; p.up = up; p.fire = fire; p.m.visible = true;
+  p.m.position.copy(pos); if (spread) p.m.position.add(_gs.set((Math.random() - .5) * spread, Math.random() * spread * .5, (Math.random() - .5) * spread));
+  p.m.material.color.set(fire ? (Math.random() < .5 ? 0xffb030 : 0xff6a1a) : Math.random() < .5 ? 0x2b2b2b : 0x454545);
+  p.m.material.emissive.setHex(fire ? 0x803000 : 0);
+}
+function updatePuffs(dt) {
+  for (const p of tsm) {
+    if (p.t > p.life) { p.m.visible = false; continue; }
+    p.t += dt; const f = p.t / p.life;
+    p.m.position.y += p.up * dt;
+    p.m.scale.setScalar(p.k * (p.fire ? .6 + f * 1.6 : .8 + f * 3));
+    p.m.material.opacity = (p.fire ? .95 : .6) * (1 - f);
+  }
+}
+function fallTarget(tg, dt) {
+  const f = tg.fall; f.t += dt;
+  f.v.y -= G * .8 * dt; f.v.multiplyScalar(1 - .05 * dt);
+  tg.g.position.addScaledVector(f.v, dt);
+  // point the nose along the path, and roll as it goes
+  const hs = Math.hypot(f.v.x, f.v.z);
+  tg.g.rotation.set(Math.atan2(f.v.y, hs), Math.atan2(-f.v.x, -f.v.z), tg.g.rotation.z + f.roll * dt, 'YXZ');
+  tg.smT -= dt; while (tg.smT < 0) { tg.smT += .05; puff(tg.g.position, 1.6, 4, 1.5, false, 1.5); if (Math.random() < .5) puff(tg.g.position, 1.1, .5, 0, true, 1); }
+  const gy = groundHeight(tg.g.position.x, tg.g.position.z);
+  if (tg.g.position.y < gy + 1 || f.t > 30) {
+    // boom: a fireball, then a rising column of smoke; it flies again a few seconds later
+    _gp.set(tg.g.position.x, gy + 2, tg.g.position.z);
+    for (let k = 0; k < 18; k++) puff(_gp, 4 + Math.random() * 3, 1 + Math.random() * .8, 3, true, 10);
+    for (let k = 0; k < 22; k++) puff(_gp, 4 + Math.random() * 3, 5 + Math.random() * 3, 5, false, 12);
+    if (au && settings.sound) { const c = au.ctx, s = c.createBufferSource(), b = c.createBiquadFilter(), gn = c.createGain(), d = tg.g.position.distanceTo(camera.position);
+      s.buffer = au.nb; b.type = 'lowpass'; b.frequency.value = 300; gn.gain.setValueAtTime(Math.min(1, 400 / (d + 50)), c.currentTime); gn.gain.exponentialRampToValueAtTime(.001, c.currentTime + 1.6);
+      s.connect(b); b.connect(gn); gn.connect(au.master); s.start(c.currentTime + d / 340); s.stop(c.currentTime + d / 340 + 1.7); }
+    tg.fall = null; tg.dead = 8; tg.g.visible = false; tg.g.rotation.x = 0;
+  }
+}
 function updateTargets(dt) {
-  if (!kids || atSea || onMoon) { for (const tg of targets) tg.g.visible = false; return; }
+  if (state === 'flying') updatePuffs(dt);
+  if (!kids || atSea || onMoon) { for (const tg of targets) { tg.g.visible = false; tg.fall = null; } for (const p of tsm) { p.t = 99; p.m.visible = false; } return; }
   if (!targets.length) buildTargets();
   const run = state === 'flying';
   for (const tg of targets) {
+    if (tg.fall) { if (run) fallTarget(tg, dt); continue; }
     if (run) { tg.a += tg.w * dt; if (tg.dead > 0) { tg.dead -= dt; if (tg.dead <= 0) { tg.hp = 0; } } }
     tg.g.visible = tg.dead <= 0;
     const x = tg.cx + Math.cos(tg.a) * tg.R, z = tg.cz + Math.sin(tg.a) * tg.R, y = FIELD + tg.alt + Math.sin(tg.a * 3 + tg.i) * 12;
@@ -3917,7 +3959,7 @@ function initAudio() {
     const gsrc = ctx.createBufferSource(); gsrc.buffer = nb; gsrc.loop = true; const gf = ctx.createBiquadFilter(); gf.type = 'lowpass'; gf.frequency.value = 1500; gf.Q.value = .7;
     const gun = ctx.createGain(); gun.gain.value = 0; const chop = ctx.createGain(); chop.gain.value = .5; const lfo = ctx.createOscillator(); lfo.type = 'square'; lfo.frequency.value = 26; const lg = ctx.createGain(); lg.gain.value = .5;
     lfo.connect(lg); lg.connect(chop.gain); gsrc.connect(gf); gf.connect(gun); gun.connect(chop); chop.connect(master); gsrc.start(); lfo.start();
-    au = { ctx, master, lp, eg, o1, o2, o3, g3, o4, g4, wg, rg, so, sg, rain, drum, roar, abr, hiss, gun, lfo, gf };
+    au = { ctx, master, lp, eg, o1, o2, o3, g3, o4, g4, wg, rg, so, sg, rain, drum, roar, abr, hiss, gun, lfo, gf, nb };
     if (ctx.state !== 'running') ctx.resume();
   } catch (e) { au = null; }
 }
@@ -4062,7 +4104,7 @@ wxSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => 
 applyWeather(settings.wx); syncWx();
 const locSeg = $('locSeg');
 const LOC_TXT = { earth: [$('mEyebrow').textContent, $('mSub').innerHTML],
-  kids: ['FREE FLY · R-LAW · NO CRASHING', 'Fly anywhere and you can\'t crash: hit the ground or a tree and you bounce back up into the sky. Five bright target planes circle the field, slow and easy to hit. Hold <b>K</b> (or <b>GUNS</b>) to shoot them. The guns never run out here.'],
+  kids: ['FREE FLY · R-LAW · NO CRASHING', 'Fly anywhere and you can\'t crash: hit the ground or a tree and you bounce back up into the sky. Five bright target planes circle the field, slow and easy to hit: four hits and one goes down in smoke. Hold <b>K</b> (or <b>GUNS</b>) to shoot them. The guns never run out here.'],
   sea: ['USS THEODORE ROOSEVELT · CVN-71 · GULF OF MEXICO', 'Nimitz-class carrier 80 nm south of Galveston: <b>1,092 ft</b> flight deck, landing area angled <b>9°</b>, four wires, <b>27 kt</b> over the deck. Catch a wire in the Tomcat or the Brick Jet, or take anything else off the bow. Paddles is on the radio.'] };
 function syncLoc() {
   locSeg.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.l === settings.loc))); document.body.classList.toggle('moon', onMoon); document.body.classList.toggle('sea', atSea);
