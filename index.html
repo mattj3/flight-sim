@@ -170,7 +170,7 @@ body:not(.touch) .touch-help{display:none}
 
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="rotate">Turn your phone sideways for the full view</div>
-<div id="hint">W S pitch · A D roll · Q E rudder · R F throttle · [ ] trim · B brakes · <span class="gear-only">G gear · </span><span class="jet-only">H hook · </span><span class="jato-only">J JATO · </span>C view · drag to look · Esc menu</div>
+<div id="hint">W S pitch · A D roll · Q E rudder · R F throttle · [ ] trim · B brakes · <span class="gear-only">G gear · </span><span class="jet-only">H hook · </span><span class="jato-only" id="hJato">J JATO · </span>C view · drag to look · Esc menu</div>
 
 <div id="rudRow" class="touch-only">
   <button class="btn" id="rudL" type="button" aria-label="Left rudder">◄ RUDDER</button>
@@ -827,9 +827,10 @@ const TYPES = {
     tail: true, threePt: 11.5, mainL: [-.9, -1.15, -.42], tailZ: 4.5, wheelR: .21, defl: [.08, .04], zeta: [.55, .5],
     steer: 22, steerV: 10, muLat: [.55, .4], muRoll: .045, muBrake: .26, sink: 3.4, prop: [0, .1, -2.12, .91], tip: [5.37, 1.02, .3],
     vRef: 30, kA: 9, kE: .36, a0: .02, roll: 2.4, rollD: 3.6, yaw: 1.9, advY: .32, slip: .3, pfac: .1, gyro: .3, trimRange: .4,
+    jato: { n: 2, F: 1200, burn: 8, cant: 0, p: [0, .35, 0], shots: 3, fx: [[-1.65, .8, .9], [1.65, .8, .9]], puff: .45, msg: 'Rockets! 540 lb of thrust for 8 seconds' },   // not in any Piper catalogue: two hobby rockets under the wings, three salvos a flight
     eye: [0, .68, .78], fov: 64, tilt: -.05,
     placard: [['VS', 38], ['VX', 45], ['VY', 55], ['CRUISE', 73], ['VNE', 122]],
-    tips: 'No flaps, no electrics, no stall warning. On the ground the nose blocks the view ahead, so look out the side or <b>S-turn</b> while taxiing. Full power, ease the tail up with a little forward stick, hold right rudder, and it flies itself off at about 45 mph. Glide at 55 to 60 mph, then hold it off for a three-point landing.',
+    tips: 'No flaps, no electrics, no stall warning. On the ground the nose blocks the view ahead, so look out the side or <b>S-turn</b> while taxiing. Full power, ease the tail up with a little forward stick, hold right rudder, and it flies itself off at about 45 mph. Glide at 55 to 60 mph, then hold it off for a three-point landing. Not in the Piper catalogue: <b>J</b> lights the two rockets under the wings, three times a flight.',
     stall: null, reg: 'N92436'
   },
   c180: {
@@ -855,7 +856,7 @@ const TYPES = {
     eng: { turbo: true, P: 13.69e6, Ts: 160000, eta: .8, gov: 1021, idle: 735, cyl: 8, nb: 4, rev: .45 },
     tail: false, noseZ: -8.57, mainL: [-2.17, -2.75, 1.2], wheelR: .71, defl: [.25, .2], zeta: [.55, .6], toFlaps: 1,
     steer: 25, muLat: [.6, .5], muRoll: .045, muBrake: .4, sink: 4.6, prop: [9.9, 1.3, -4.0, 2.06], tip: [20.2, 2.15, 1.5], tailSkid: [0, -.6, 9.5], flapT: 10, retract: true, gearT: 14, gearCd: .012, vle: 168, belly: [0, -1.95, -1],
-    jato: { n: 8, F: 4448, burn: 15, cant: .1745, p: [0, -.7, 3.95] },   // eight 1,000 lb bottles for 15 s on the paratroop doors
+    jato: { n: 8, F: 4448, burn: 15, cant: .1745, p: [0, -.7, 3.95], fx: [[-2.4, -1.0, 6.2], [2.4, -1.0, 6.2]], puff: 1, msg: 'JATO · eight bottles, 8,000 lb of thrust for 15 seconds' },   // eight 1,000 lb bottles for 15 s on the paratroop doors
     vRef: 70, kA: 4, kE: .4, a0: 0, roll: .85, rollD: 1.5, yaw: 1.2, slip: .1, pfac: .03, gyro: .02, trimRange: .6, atHi: 2.4,
     eye: [-.55, 1.6, -10.9], fov: 72, tilt: -.2, clearR: 3, scale: 2.8, discK: .5,
     placard: [['VSO', 86], ['VS', 99], ['VR', 95], ['VREF', 103], ['GEAR', 168], ['VMO', 320]],
@@ -1105,6 +1106,17 @@ function buildModel(t) {
   for (const s of [-1, 1]) bar([s * .1, ty + .14, tz - .02], [s * .03, .3, tz - .45], .003, 0x2a2a2a, root, 4);
   wheel(.09, .06, 0, ty + .09, tz, root);
   surf.prop = prop(t, root);
+  // the fun part: a rocket under each wing on a little pylon, red nose and fins, with its flame
+  if (t.jato) { surf.jatoFl = [];
+    for (const s of [-1, 1]) { const g = pivot(s * 1.65, .8, .2, root);
+      box(.03, .12, .3, 0x9a9a9a, 0, .1, 0, g);
+      const tb = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .8, 12).rotateX(Math.PI / 2), pmat(0xd8d8d2, 'metal')); tb.castShadow = true; g.add(tb);
+      const nc = new THREE.Mesh(new THREE.ConeGeometry(.06, .2, 12).rotateX(-Math.PI / 2).translate(0, 0, -.5), pmat(0xc8241c)); g.add(nc);
+      for (let k = 0; k < 4; k++) { const f = box(.008, .1, .14, 0xc8241c, 0, 0, .33, g); f.geometry.translate(0, .08, 0); f.rotation.z = k * Math.PI / 2; }
+      const fl = new THREE.Group(); fl.position.z = .42; fl.visible = false; g.add(fl); surf.jatoFl.push(fl);
+      fl.add(new THREE.Mesh(new THREE.ConeGeometry(.07, 1.1, 12, 1, true).rotateX(-Math.PI / 2).translate(0, 0, .55), new THREE.MeshBasicMaterial({ color: 0xff9a40, transparent: true, opacity: .65, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })));
+      fl.add(new THREE.Mesh(new THREE.ConeGeometry(.04, .5, 10, 1, true).rotateX(-Math.PI / 2).translate(0, 0, .25), new THREE.MeshBasicMaterial({ color: 0xfff2c8, transparent: true, opacity: .9, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })));
+    } }
   models[t.id] = { root, surf };
 }
 /* ---------- exterior model: Cessna 180K Skywagon ---------- */
@@ -1335,8 +1347,7 @@ function buildModel130(t) {
     fl.add(new THREE.Mesh(new THREE.ConeGeometry(.17, 2.4, 12, 1, true).rotateX(-Math.PI / 2).translate(0, 0, 1.2), new THREE.MeshBasicMaterial({ color: 0xff9a40, transparent: true, opacity: .6, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })));
     fl.add(new THREE.Mesh(new THREE.ConeGeometry(.1, 1.1, 10, 1, true).rotateX(-Math.PI / 2).translate(0, 0, .55), new THREE.MeshBasicMaterial({ color: 0xfff2c8, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })));
   }
-  surf.gearAnim = () => { const on = ac.jatoF > 0; for (const f of surf.jatoFl) { f.visible = on; if (on) f.scale.set(1, 1, (.85 + .3 * Math.random()) * Math.min(1, ac.jatoF / 30000)); }
-    const k = 1 - ac.gearPos; for (const g of surf.mains) { g.position.y = k * .8; g.visible = ac.gearPos > .03; } surf.noseG.rotation.x = k * 1.65; surf.noseG.visible = ac.gearPos > .03; };
+  surf.gearAnim = () => { const k = 1 - ac.gearPos; for (const g of surf.mains) { g.position.y = k * .8; g.visible = ac.gearPos > .03; } surf.noseG.rotation.x = k * 1.65; surf.noseG.visible = ac.gearPos > .03; };
   // wing: constant 16 ft chord to the inboard engines, then tapering to the tip with a straight trailing edge.
   // Fowler flaps from the fuselage out to the ailerons
   const wy = 1.72, dih = .02, xb = 5.3, xt = t.span / 2, zl = x => x < xb ? -1.3 : -1.3 + (x - xb) / (xt - xb) * 2.28;
@@ -3191,7 +3202,7 @@ function resetCommon() {
   smokeOn = false; smoke.forEach(s => s.mesh.visible = false);
   ks.elev = ks.ail = ks.rud = 0; instr.hdgPrev = null;
   for (const w of T.wheels) { w.was = false; w.comp = 0; }
-  ac.gear = 1; ac.gearPos = 1; ac.hook = false; ac.hookPos = 0; ac.hookPrev = null; ac.sweep = 20; ac.spool = 0; ac.ab = 0; ac.cat = null; ac.trap = null; ac.bolter = false; ac.gMaxSeen = 1; ac.rev = 0; ac.jatoT = 0; ac.jatoUsed = false; ac.jatoF = 0; jsm.forEach(p => { p.t = 99; p.m.visible = false; }); ac.rampDev = undefined; ac.tdFpm = 0;
+  ac.gear = 1; ac.gearPos = 1; ac.hook = false; ac.hookPos = 0; ac.hookPrev = null; ac.sweep = 20; ac.spool = 0; ac.ab = 0; ac.cat = null; ac.trap = null; ac.bolter = false; ac.gMaxSeen = 1; ac.rev = 0; ac.jatoT = 0; ac.jatoShots = 0; ac.jatoF = 0; jsm.forEach(p => { p.t = 99; p.m.visible = false; }); ac.rampDev = undefined; ac.tdFpm = 0;
   lsoPass = null; if (T.sweep) sweepState(T);
 }
 function placeOnGround(u, v, hdgDeg, xyz) {
@@ -3327,8 +3338,10 @@ function setGear(down) {
 function fireJato() {
   if (!T.jato) { toast('No JATO on this airplane', 1400); return; }
   if (ac.crashed || state !== 'flying') return;
-  if (ac.jatoUsed) { toast('The JATO bottles are spent', 1600); return; }
-  ac.jatoUsed = true; ac.jatoT = T.jato.burn; toast('JATO · eight bottles, 8,000 lb of thrust for 15 seconds', 2400);
+  if (ac.jatoT > 0) return;
+  if ((ac.jatoShots || 0) >= (T.jato.shots || 1)) { toast(T.jato.shots > 1 ? 'Out of rockets' : 'The JATO bottles are spent', 1600); return; }
+  ac.jatoShots = (ac.jatoShots || 0) + 1; ac.jatoT = T.jato.burn;
+  const left = (T.jato.shots || 1) - ac.jatoShots; toast(T.jato.msg + (T.jato.shots > 1 ? ` · ${left} left` : ''), 2400);
 }
 function setHook(down) {
   if (!T.hook) { toast('No tailhook on this one', 1400); return; }
@@ -3483,8 +3496,8 @@ let smokeOn = false;
 const jsm = []; let jsmT = 0, jsmI = 0;
 { const g = new THREE.IcosahedronGeometry(1, 1); for (let i = 0; i < 200; i++) { const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: 0xe6e4de, transparent: true, opacity: 0, depthWrite: false })); m.visible = false; scene.add(m); jsm.push({ m, t: 99, w: new V3() }); } }
 function updateJatoSmoke(dt) {
-  if (ac.jatoF > 0 && T.jato) { jsmT -= dt; while (jsmT < 0) { jsmT += .09; for (const s of [-1, 1]) { const p = jsm[jsmI++ % jsm.length]; p.t = 0; p.m.position.set(s * 2.4, -1.0, 6.2).applyQuaternion(ac.q).add(ac.pos); p.w.copy(windVec(50)); p.m.visible = true; } } }
-  for (const p of jsm) { if (p.t > 9) { p.m.visible = false; continue; } p.t += dt; p.m.position.addScaledVector(p.w, dt); p.m.position.y += .5 * dt; p.m.scale.setScalar(1.1 + p.t * 1.4); p.m.material.opacity = .45 * (1 - p.t / 9) * Math.min(1, p.t * 4 + .3); }
+  if (ac.jatoF > 0 && T.jato) { jsmT -= dt; while (jsmT < 0) { jsmT += .09; for (const e of T.jato.fx) { const p = jsm[jsmI++ % jsm.length]; p.t = 0; p.k = T.jato.puff; p.m.position.set(...e).applyQuaternion(ac.q).add(ac.pos); p.w.copy(windVec(50)); p.m.visible = true; } } }
+  for (const p of jsm) { if (p.t > 9) { p.m.visible = false; continue; } p.t += dt; p.m.position.addScaledVector(p.w, dt); p.m.position.y += .5 * dt; p.m.scale.setScalar((1.1 + p.t * 1.4) * (p.k || 1)); p.m.material.opacity = .45 * (1 - p.t / 9) * Math.min(1, p.t * 4 + .3); }
 }
 
 /* ---------- toast ---------- */
@@ -3607,7 +3620,7 @@ acsel.innerHTML = Object.values(TYPES).map(t => `<button class="acb" type="butto
 function setType(id) {
   T = TYPES[id] || TYPES.j3; settings.ac = T.id; saveSettings();
   for (const k in models) models[k].root.visible = k === T.id;
-  document.body.classList.toggle('jet', !!T.eng.jet); document.body.classList.toggle('gear', !!T.retract); document.body.classList.toggle('rev', !!T.eng.rev); document.body.classList.toggle('jato', !!T.jato); syncRunwayLabels();
+  document.body.classList.toggle('jet', !!T.eng.jet); document.body.classList.toggle('gear', !!T.retract); document.body.classList.toggle('rev', !!T.eng.rev); document.body.classList.toggle('jato', !!T.jato); { const rk = T.jato && T.jato.shots > 1; $('hJato').textContent = rk ? 'J rockets · ' : 'J JATO · '; $('bJato').textContent = rk ? 'ROCKETS' : 'JATO'; } syncRunwayLabels();
   acsel.querySelectorAll('.acb').forEach(b => b.setAttribute('aria-checked', String(b.dataset.ac === T.id)));
   $('plcap').textContent = `${T.name.toUpperCase()} · V-SPEEDS · ${T.unit === 'kt' ? 'KIAS' : 'MPH IAS'}`;
   $('placard').innerHTML = T.placard.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
@@ -3680,6 +3693,7 @@ function frame(now) {
   if (S.flaps && !S.anim) { const fd = T.flaps[ac.flaps].deg * D2R; for (const f of S.flaps) f.rotation.x = approach(f.rotation.x, fd, .6, dt); }
   if (S.anim) S.anim(dt);
   if (S.gearAnim) S.gearAnim();
+  if (S.jatoFl) { const on = ac.jatoF > 0, fk = T.jato ? ac.jatoF / (T.jato.n * T.jato.F) : 0; for (const f of S.jatoFl) { f.visible = on; if (on) f.scale.set(1, 1, (.85 + .3 * Math.random()) * Math.min(1, fk * 1.15)); } }
   { const k = T.discK || 1; for (const pr of S.props || (S.prop ? [S.prop] : [])) { pr.g.rotation.z += ac.rpm / 60 * Math.PI * 2 * dt * (ac.rpm > 900 * k ? .085 : 1); pr.disc.visible = ac.rpm > 900 * k; pr.g.visible = ac.rpm < 1100 * k; } }
   // windsock swings toward where the wind is going and fills with speed (15 kt for full)
   { const wv = windVec(6), ws = Math.hypot(wv.x, wv.z) * KT; sock.rotation.set(-(Math.PI / 2) * (1 - clamp(ws / 15, .08, 1)) * .9, Math.atan2(-wv.x, -wv.z) + Math.PI, 0, 'YXZ'); }
