@@ -127,7 +127,12 @@ body.moon .earth-only,body.sea .land-only{display:none}
 body.rev .btn.rev-only,body.jato .btn.jato-only{display:block!important}
 body.jato #hint .jato-only{display:inline!important}
 .xcol{display:none!important}
-body.gear .col.xcol,body.jato .col.xcol,body.rev .col.xcol{display:flex!important}
+body.gear .col.xcol,body.jato .col.xcol,body.rev .col.xcol,body.guns .col.xcol{display:flex!important}
+.guns-only,.kids-only{display:none!important}
+body.kids .cell.kids-only{display:flex!important}
+body.guns .btn.guns-only{display:block!important}
+body.guns .cell.guns-only{display:flex!important}
+body.guns #hint .guns-only{display:inline!important}
 body.gear .btn.gear-only{display:block!important}
 body.gear #hint .gear-only{display:inline!important}
 body.jet .btn.jet-only{display:block!important}
@@ -163,6 +168,8 @@ body:not(.touch) .touch-help{display:none}
   <div class="cell"><span class="lb">FLAP</span><span class="v" id="vFlap">0</span></div>
   <div class="cell"><span class="lb" id="lWind">WIND</span><span class="v" id="vWind">CALM</span></div>
   <div class="cell jet-only"><span class="lb">AOA U</span><span class="v" id="vAoa">0</span></div>
+  <div class="cell guns-only"><span class="lb">ROUNDS</span><span class="v" id="vAmmo">0</span></div>
+  <div class="cell kids-only"><span class="lb">TARGETS</span><span class="v" id="vPop">0</span></div>
 </div>
 
 <div id="topBtns">
@@ -172,7 +179,7 @@ body:not(.touch) .touch-help{display:none}
 
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="rotate">Turn your phone sideways for the full view</div>
-<div id="hint">W S pitch · A D roll · Q E rudder · R F throttle · [ ] trim · B brakes · <span class="gear-only">G gear · </span><span class="jet-only">H hook · </span><span class="jato-only" id="hJato">J JATO · </span>C view · drag to look · Esc menu</div>
+<div id="hint">W S pitch · A D roll · Q E rudder · R F throttle · [ ] trim · B brakes · <span class="gear-only">G gear · </span><span class="jet-only">H hook · </span><span class="jato-only" id="hJato">J JATO · </span><span class="guns-only">K guns · </span>C view · drag to look · Esc menu</div>
 
 <div id="rudRow" class="touch-only">
   <button class="btn" id="rudL" type="button" aria-label="Left rudder">◄ RUDDER</button>
@@ -190,6 +197,7 @@ body:not(.touch) .touch-help{display:none}
     <button class="btn jet-only" id="bHook" type="button">HOOK</button>
     <button class="btn rev-only" id="bRev" type="button">REV</button>
     <button class="btn jato-only" id="bJato" type="button">JATO</button>
+    <button class="btn guns-only" id="bGun" type="button">GUNS</button>
   </div>
 </div>
 <div id="right" class="touch-only">
@@ -225,6 +233,7 @@ body:not(.touch) .touch-help{display:none}
         <button type="button" role="radio" data-l="earth" aria-checked="true">R-LAW, TEXAS</button>
         <button type="button" role="radio" data-l="sea" aria-checked="false">CARRIER · GULF</button>
         <button type="button" role="radio" data-l="moon" aria-checked="false">THE MOON · 1/6 G</button>
+        <button type="button" role="radio" data-l="kids" aria-checked="false">FREE FLY · KIDS</button>
       </div>
     </div>
     <div class="row earth-only land-only">
@@ -253,6 +262,7 @@ body:not(.touch) .touch-help{display:none}
       <button class="tog" id="tLite" type="button" aria-pressed="false">ULTRA LOW · OLD PCs</button>
       <button class="tog" id="tAuto" type="button" aria-pressed="false">AUTO RUDDER</button>
       <button class="tog" id="tTrim" type="button" aria-pressed="false">AUTO TRIM</button>
+      <button class="tog" id="tGuns" type="button" aria-pressed="false">MACHINE GUNS</button>
     </div>
     <dl class="help key-help">
       <dt>W S · ↑ ↓</dt><dd>Nose down / nose up (stick or yoke)</dd>
@@ -262,6 +272,7 @@ body:not(.touch) .touch-help{display:none}
       <dt>[ ]</dt><dd>Trim nose down / nose up, with auto trim off (menu). Auto trim holds the speed you were flying when you let go of the stick</dd>
       <dt>B · Space</dt><dd>Brakes. Hold rudder to brake one side</dd>
       <dt>G · H</dt><dd>F-14: gear up / down, tailhook up / down. Throttle past 80% lights the afterburners</dd>
+      <dt>K</dt><dd>Fire the guns, with machine guns on (menu). Only the F-14's M61 is real; the others are for fun</dd>
       <dt>C · drag</dt><dd>Change view · drag the view to look around the cabin</dd>
     </dl>
     <dl class="help touch-help">
@@ -270,6 +281,7 @@ body:not(.touch) .touch-help{display:none}
       <dt>Rudder</dt><dd>Auto rudder (menu) steers with the stick on the ground and keeps the ball centred. Turn it off for the rudder buttons; taildraggers need them the whole roll</dd>
       <dt>Auto trim</dt><dd>On by default. Let go of the stick and it holds the speed you were flying. Turn it off in the menu for the trim buttons</dd>
       <dt>Gear · Hook</dt><dd>F-14 only. Throttle past 80% lights the afterburners</dd>
+      <dt>Guns</dt><dd>Hold to fire, with machine guns on (menu)</dd>
       <dt>Drag view</dt><dd>Look around the cabin</dd>
     </dl>
     <p class="fine">A fictional grass-strip fly-in in the East Texas piney woods, set on a late-October afternoon. Scenery is generated, not surveyed. Gamepads work too.</p>
@@ -289,7 +301,7 @@ const KT = 1.94384, FT = 3.28084, FPM = 196.85, MPH = 2.23694;
 
 /* ---------- settings ---------- */
 const coarse = matchMedia('(pointer: coarse)').matches;
-const settings = { sound: true, data: true, high: !coarse, ac: 'j3', wind: 'light', wx: 'afternoon', autoRud: coarse, autoTrim: true, loc: 'earth' };
+const settings = { sound: true, data: true, high: !coarse, ac: 'j3', wind: 'light', wx: 'afternoon', autoRud: coarse, autoTrim: true, loc: 'earth', guns: false };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('rlaw-settings') || '{}')); } catch (e) {}
 // ultra-low mode for old machines (add ?lite to the address): no shadows or antialiasing, a low render resolution, nearer
 // fog and trees, 30 frames a second and slower panel redraws. The full version is untouched without it
@@ -884,6 +896,8 @@ const TYPES = {
     vRef: 67, kA: 6, kE: .36, a0: .05, roll: 3.3, rollD: 2.0, rollQ: 8, yaw: .9, advY: .08, slip: 0, pfac: 0, gyro: 0, trimRange: .7, gMax: 6.5, atHi: 4.6,
     retract: true, hook: { p: [0, -.32, 5.6], L: 2.6, down: 40 }, sweep: true, onSpeed: 15,
     eye: [0, .98, -6.05], fov: 70, tilt: -.2, clearR: 2.2, scale: 1.6,
+    // the M61A1 Vulcan in the left side of the nose: 6,000 rounds a minute, 675 rounds of 20 mm
+    gun: { name: 'M61 Vulcan', p: [[-.75, -.15, -7.6]], rpm: 6000, rounds: 675, v: 1030, m: .1, tr: 5, fl: .7 },
     placard: [['VS APPR', 112], ['ON-SPEED', 130], ['FLAPS', 225], ['GEAR', 280], ['MACH', '2.34']],
     tips: 'Two TF30s, a wing that sweeps itself from 20° to 68° as you speed up, and a tailhook. Throttle past 80% lights the burners. <b>G</b> raises and lowers the gear, <b>H</b> the hook. At sea, <b>Catapult</b> puts you on the bow cat: run it up to full power and hold it, and the shot comes two seconds later. For the trap, fly <b>15 units</b> of angle of attack (the amber donut on the indexer, about 130 knots) with power, keep the meatball centred against the green datum lights and the line-up on the centreline, and do not flare. Go to full power as you touch down, in case the hook skips: then it is a bolter and you fly away. After the trap, idle and <b>H</b> to raise the hook.',
     to: 'Flaps down · full power, burner if you like · rotate at about 140 knots', stall: 'aoa', reg: '160403'
@@ -901,6 +915,7 @@ const TYPES = {
     vRef: 64, kA: 6.5, kE: .4, a0: .04, roll: 5.2, rollD: 2.0, rollQ: 11, yaw: 1.0, advY: .05, slip: 0, pfac: 0, gyro: 0, trimRange: .7, gMax: 9, atHi: 4.6,
     retract: true, gearT: 3, vle: 300, hook: { p: [0, -1.05, 4.0], L: 1.55, down: 40 }, onSpeed: 15, lso: 'Brick',
     eye: [0, .98, -6.05], fov: 70, tilt: -.2, clearR: 2, scale: 1.3,
+    gun: { name: 'brick blasters', p: [[-1.25, -.3, -4.6], [1.25, -.3, -4.6]], rpm: 1200, rounds: 800, v: 1000, m: .1, tr: 3, fl: .55 },
     placard: [['VS APPR', 100], ['ON-SPEED', 128], ['GEAR', 300], ['G', 9], ['STUDS', 'LOTS']],
     tips: 'A toy-brick fighter built at full size: one big afterburning engine, a studded delta, a minifig pilot, and a tailhook. Throttle past 80% lights the burner. <b>G</b> for the gear, <b>H</b> for the hook. It rolls fast and pulls 9 g. Rotate at about 130 knots. At sea it goes on the catapult like the Tomcat: fly <b>15 units</b> on the indexer (about 128 knots), keep the ball centred and catch a wire.',
     to: 'Flaps down · full power, burner if you like · rotate at about 130 knots', stall: 'aoa', reg: 'BRICK 1'
@@ -2625,7 +2640,7 @@ const moonSky = new THREE.Group(); moonSky.visible = false; scene.add(moonSky);
 // the lite camera stops at 14 km, so pull the sky dome, stars and Earth in to stay inside it
 if (LITE) { sky.scale.setScalar(.45); moonSky.scale.setScalar(.45); }
 function setWorld(loc) {
-  const moon = loc === 'moon', sea = loc === 'sea'; settings.loc = moon ? 'moon' : sea ? 'sea' : 'earth';
+  const moon = loc === 'moon', sea = loc === 'sea'; kids = loc === 'kids'; settings.loc = moon ? 'moon' : sea ? 'sea' : kids ? 'kids' : 'earth';
   if (moon) buildMoon();
   if (sea) buildSea();
   onMoon = moon; atSea = sea; G = moon ? G_MOON : G_EARTH;
@@ -3190,6 +3205,15 @@ function step(dt) {
   let jq = 0; ac.jatoF = 0;
   if (ac.jatoT > 0 && t.jato) { const J = t.jato, k = Math.min(1, (J.burn - ac.jatoT) / .4) * Math.min(1, ac.jatoT / 1.2), Fj = J.n * J.F * k, c = Math.cos(J.cant), sn = Math.sin(J.cant);
     _F.z -= Fj * c; _F.y += Fj * sn; jq = J.p[1] * -Fj * c - J.p[2] * Fj * sn; ac.jatoF = Fj; if (dt) ac.jatoT = Math.max(0, ac.jatoT - dt); }
+  // guns: rounds leave at the gun's rate, and the recoil (shot momentum plus the powder gas, about 1.3×) pushes back along the gun line
+  let gq = 0, gy = 0; ac.gunF = 0;
+  if (inp.gun && !ac.crashed && ac.ammo > 0 && dt) {
+    const g = gunOf(t), rps = g.rpm / 60 * g.p.length, Fr = rps * g.m * g.v * 1.3;
+    ac.gunAcc += rps * dt;
+    while (ac.gunAcc >= 1 && ac.ammo > 0) { ac.gunAcc -= 1; if (!kids) ac.ammo--; fireRound(g, g.p[ac.gunI++ % g.p.length], ac.gunAcc / rps); if (!ac.ammo) toast(`Out of ammunition · ${g.rounds} rounds fired`, 2000); }
+    let mx = 0, my = 0; for (const p of g.p) { mx += p[0] / g.p.length; my += p[1] / g.p.length; }
+    _F.z += Fr; gq = my * Fr; gy = -mx * Fr; ac.gunF = Fr;
+  }
   ac.fs.copy(_F);                     // aerodynamic + thrust specific force (contact added below), body axes
   _F.applyQuaternion(q);
   _F.y -= t.mass * G;
@@ -3228,7 +3252,7 @@ function step(dt) {
   ac.pos.addScaledVector(ac.vel, dt);
   // rotation: aerodynamic angular accelerations plus gear torques over inertia
   const f = qbar / t.qRef, vr = V / t.vRef, fc = f + t.slip * Math.max(0, thrust) / t.eng.Ts;
-  _tb.copy(_tq).applyQuaternion(_qi); _tb.x += jq;
+  _tb.copy(_tq).applyQuaternion(_qi); _tb.x += jq + gq; _tb.y += gy;
   // the Tomcat has no g limiter, but a pilot flies to the 6.5 g limit, so the stick asks for no more lift than that
   let elev = inp.elev;
   if (t.gMax && V > 20 && fc > 1e-3) { const ag = (t.gMax * t.mass * G / (qbar * t.S) - t.cl0 - fl.cl) / t.k, an = (-3 * t.mass * G / (qbar * t.S) - t.cl0 - fl.cl) / t.k, dq = (3.2 * vr + .6) * G / (V * f * t.kA);
@@ -3365,6 +3389,7 @@ function trackRoll() {
   if (ac.td && !ac.tdAnn && ac.onGround && gs < .8 && !ac.trap) { ac.tdAnn = true; toast(`Stopped in ${Math.round(Math.hypot(ac.pos.x - ac.td.x, ac.pos.z - ac.td.z) * FT / 10) * 10} ft`, 3000); }
 }
 function crash(reason) {
+  if (kids) { kidsFly(ac.pos.x, ac.pos.z, heading(), Math.max(80, ac.pos.y - groundHeight(ac.pos.x, ac.pos.z) + 60)); toast('Boing! No crashing in free fly', 1800); return; }
   if (atSea && ac.pos.y < DECK - 3 && !/ramp|ship|island/i.test(reason)) reason = 'Went into the water';
   ac.crashed = true; ac.why = reason; ac.vel.set(0, 0, 0); ac.w.set(0, 0, 0); ac.rpm = 0;
   ac.pos.y = Math.max(ac.pos.y, groundHeight(ac.pos.x, ac.pos.z) + .6);
@@ -3397,7 +3422,7 @@ function resetCommon() {
   smokeOn = false; smoke.forEach(s => s.mesh.visible = false);
   ks.elev = ks.ail = ks.rud = 0; instr.hdgPrev = null;
   for (const w of T.wheels) { w.was = false; w.comp = 0; }
-  ac.gear = 1; ac.gearPos = 1; ac.hook = false; ac.hookPos = 0; ac.hookPrev = null; ac.sweep = 20; ac.spool = 0; ac.ab = 0; ac.cat = null; ac.trap = null; ac.bolter = false; ac.gMaxSeen = 1; ac.rev = 0; ac.jatoT = 0; ac.jatoShots = 0; ac.jatoF = 0; jsm.forEach(p => { p.t = 99; p.m.visible = false; }); ac.rampDev = undefined; ac.tdFpm = 0;
+  ac.gear = 1; ac.gearPos = 1; ac.hook = false; ac.hookPos = 0; ac.hookPrev = null; ac.sweep = 20; ac.spool = 0; ac.ab = 0; ac.cat = null; ac.trap = null; ac.bolter = false; ac.gMaxSeen = 1; ac.rev = 0; ac.jatoT = 0; ac.jatoShots = 0; ac.jatoF = 0; jsm.forEach(p => { p.t = 99; p.m.visible = false; }); ac.ammo = gunOf(T).rounds; ac.gunAcc = 0; ac.gunI = 0; ac.gunF = 0; clearRounds(); ac.rampDev = undefined; ac.tdFpm = 0;
   lsoPass = null; if (T.sweep) sweepState(T);
 }
 function placeOnGround(u, v, hdgDeg, xyz) {
@@ -3459,7 +3484,7 @@ function resetApproach() {
 /* ---------- input ---------- */
 const keys = new Set(), ks = { elev: 0, ail: 0, rud: 0 };
 const stick = { x: 0, y: 0, id: null };
-let touchRud = 0, touchBrake = false, touchRev = false, revRelease = false;
+let touchRud = 0, touchBrake = false, touchRev = false, revRelease = false, touchGun = false;
 const approach = (c, t, r, dt) => { const d = t - c, m = r * dt; return Math.abs(d) <= m ? t : c + Math.sign(d) * m; };
 const expo = v => Math.sign(v) * Math.pow(Math.abs(v), 1.5);
 const gpPrev = [];
@@ -3476,7 +3501,7 @@ function readGamepad(dt) {
     if (press(12)) ac.trim = clamp(ac.trim - .02, -T.trimRange, T.trimRange);
     if (press(13)) ac.trim = clamp(ac.trim + .02, -T.trimRange, T.trimRange);
     if (press(5)) fireJato();
-    return { ail: dz(p.axes[0] || 0), elev: dz(p.axes[1] || 0), rud: dz(p.axes[2] || 0), brake: b(1) > .5, rev: b(6) > .5 && ac.thr === 0 };
+    return { ail: dz(p.axes[0] || 0), elev: dz(p.axes[1] || 0), rud: dz(p.axes[2] || 0), brake: b(1) > .5, rev: b(6) > .5 && ac.thr === 0, gun: b(4) > .5 };
   }
   return null;
 }
@@ -3523,6 +3548,7 @@ function gatherInput(dt) {
     } else { holdHdg = null; inp.rud = clamp(ac.beta * 6, -1, 1); }
   } else holdHdg = null;
   inp.brake = (keys.has('KeyB') || keys.has('Space') || touchBrake || !!(gp && gp.brake)) && !(ac.cat && ac.cat.st === 'stroke');
+  inp.gun = (!!settings.guns || kids) && (keys.has('KeyK') || touchGun || !!(gp && gp.gun));
 }
 function setGear(down) {
   if (!T.retract) { toast('Fixed gear', 1600); return; }
@@ -3596,6 +3622,7 @@ hold($('rudR'), () => touchRud = 1, () => touchRud = 0);
 hold($('brk'), () => touchBrake = true, () => touchBrake = false);
 hold($('bRev'), () => { touchRev = true; revRelease = false; }, () => { touchRev = false; revRelease = true; });
 $('bJato').addEventListener('click', fireJato);
+hold($('bGun'), () => touchGun = true, () => touchGun = false);
 $('flapUp').addEventListener('click', () => setFlaps(ac.flaps - 1));
 $('bGear').addEventListener('click', () => setGear(!ac.gear));
 $('bHook').addEventListener('click', () => setHook(!ac.hook));
@@ -3658,7 +3685,7 @@ function updateCamera(dt) {
 function setFov(f) { if (Math.abs(camera.fov - f) > .01) { camera.fov = f; camera.updateProjectionMatrix(); } }
 
 /* ---------- data strip ---------- */
-const eIas = $('vIas'), eAlt = $('vAlt'), eVs = $('vVs'), eHdg = $('vHdg'), eFlap = $('vFlap'), eWind = $('vWind');
+const eAmmo = $('vAmmo'), ePop = $('vPop'), eIas = $('vIas'), eAlt = $('vAlt'), eVs = $('vVs'), eHdg = $('vHdg'), eFlap = $('vFlap'), eWind = $('vWind');
 function updateHUD() {
   $('lIas').textContent = T.unit === 'kt' ? 'IAS KT' : 'IAS MPH';
   eIas.textContent = Math.round(speedU());
@@ -3668,6 +3695,8 @@ function updateHUD() {
   eFlap.textContent = T.flaps.length > 1 ? T.flaps[ac.flaps].lab || T.flaps[ac.flaps].deg + '°' : '—';
   document.body.classList.toggle('noflaps', T.flaps.length < 2);
   const W = windCfg(); eWind.textContent = atSea ? `${W.kt} KT` : !W.kt ? 'CALM' : `${W.from}/${W.kt}${W.gust > 3 ? 'G' + (W.kt + W.gust) : ''} KT`; $('lWind').textContent = atSea ? 'OVER DECK' : 'WIND';
+  if (settings.guns || kids) eAmmo.textContent = kids ? '∞' : ac.ammo;
+  if (kids) ePop.textContent = popped;
   if (T.eng.jet) $('vAoa').textContent = (ac.onGround && ac.ias < 20 ? 0 : ac.alpha * R2D * 1.41).toFixed(1);
   document.body.classList.toggle('ab', !!T.eng.jet && ac.thr > .8);
   syncThrottle();
@@ -3693,6 +3722,137 @@ const jsm = []; let jsmT = 0, jsmI = 0;
 function updateJatoSmoke(dt) {
   if (ac.jatoF > 0 && T.jato) { jsmT -= dt; while (jsmT < 0) { jsmT += .09; for (const e of T.jato.fx) { const p = jsm[jsmI++ % jsm.length]; p.t = 0; p.k = T.jato.puff; p.m.position.set(...e).applyQuaternion(ac.q).add(ac.pos); p.w.copy(windVec(50)); p.m.visible = true; } } }
   for (const p of jsm) { if (p.t > 9) { p.m.visible = false; continue; } p.t += dt; p.m.position.addScaledVector(p.w, dt); p.m.position.y += .5 * dt; p.m.scale.setScalar((1.1 + p.t * 1.4) * (p.k || 1)); p.m.material.opacity = .45 * (1 - p.t / 9) * Math.min(1, p.t * 4 + .3); }
+}
+
+/* ---------- guns ---------- */
+// the F-14 and the Brick Jet have their own guns; everything else gets a pair of wing-mounted .50 cals, like a WWII fighter, just for fun
+const gun50 = {};
+function gunOf(t) {
+  if (t.gun) return t.gun;
+  if (!gun50[t.id]) { const x = Math.min(t.tip[0] * .36, 7); gun50[t.id] = { name: '.50 cal', p: [[-x, t.tip[1] - .05, t.tip[2] - .6], [x, t.tip[1] - .05, t.tip[2] - .6]], rpm: 800, rounds: 800, v: 890, m: .046, tr: 4, fl: .4 }; }
+  return gun50[t.id];
+}
+// every round flies a ballistic path (gravity and air drag); every few is a tracer you can see, the rest only kick up dirt or water
+const rounds = [], NR = 600, NTR = 220;
+for (let i = 0; i < NR; i++) rounds.push({ p: new V3(), v: new V3(), t: 99, tr: false, big: false });
+let rI = 0;
+const trMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xffc35a, fog: false }), NTR);
+trMesh.count = 0; trMesh.frustumCulled = false; trMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(trMesh);
+const flashes = [];
+{ const g = new THREE.SphereGeometry(1, 8, 6), m = new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: .85, depthWrite: false, fog: false });
+  for (let i = 0; i < 2; i++) { const f = new THREE.Mesh(g, m); f.visible = false; scene.add(f); flashes.push(f); } }
+const hits = []; let hitI = 0, hitN = 0;
+{ const g = new THREE.IcosahedronGeometry(1, 1); for (let i = 0; i < 70; i++) { const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: 0x9a8462, transparent: true, opacity: 0, depthWrite: false })); m.visible = false; scene.add(m); hits.push({ m, t: 99, k: 1, sp: false }); } }
+const _gq = new THREE.Quaternion(), _gm = new THREE.Matrix4(), _gs = new V3(), _gz = new V3(0, 0, 1), _gd = new V3(), _gp = new V3();
+function fireRound(g, mp, ago) {
+  const r = rounds[rI++ % NR];
+  r.v.set(0, 0, -g.v).applyQuaternion(ac.q).add(ac.vel);
+  r.p.set(...mp).applyQuaternion(ac.q).add(ac.pos).addScaledVector(r.v, ago);
+  r.t = ago; r.tr = (ac.gunI % g.tr) === 0; r.big = g.m > .07;
+}
+function clearRounds() { for (const r of rounds) r.t = 99; for (const h of hits) { h.t = 99; h.m.visible = false; } trMesh.count = 0; for (const f of flashes) f.visible = false; }
+function gunHit(x, y, z, big) {
+  // only every other impact gets a puff, so a long burst doesn't use them all up
+  if (hitN++ % 2) return;
+  const h = hits[hitI++ % hits.length], water = (atSea && y < 1) || !!pondAt(x, z), deck = atSea && y >= 1;
+  h.t = 0; h.k = big ? 1.5 : 1; h.sp = water; h.m.position.set(x, y, z); h.m.visible = true;
+  h.m.material.color.set(water ? 0xeef3f4 : deck ? 0x8a8c8e : onMoon ? 0x9a9a98 : 0x8f7a58);
+}
+function updateGuns(dt) {
+  const g = gunOf(T), fire = ac.gunF > 0 && state === 'flying';
+  for (let i = 0; i < flashes.length; i++) {
+    const f = flashes[i], mp = g.p[i]; f.visible = fire && !!mp && Math.random() < .8;
+    if (f.visible) { f.position.set(...mp).add(_gp.set(0, 0, -.4 - g.fl * .6)).applyQuaternion(ac.q).add(ac.pos); f.scale.set(g.fl * (.5 + .5 * Math.random()), g.fl * (.5 + .5 * Math.random()), g.fl * (1.2 + Math.random())); f.quaternion.copy(ac.q); }
+  }
+  let n = 0;
+  if (state === 'flying') {
+    const drag = onMoon ? 0 : 4e-4;
+    for (const r of rounds) {
+      if (r.t > 7) continue;
+      r.t += dt;
+      const y0 = r.p.y - groundHeight(r.p.x, r.p.z), sp = r.v.length();
+      r.v.multiplyScalar(Math.max(0, 1 - drag * sp * dt)); r.v.y -= G * dt;
+      _gp.copy(r.p); r.p.addScaledVector(r.v, dt);
+      const y1 = r.p.y - groundHeight(r.p.x, r.p.z);
+      if (kids && hitTarget(_gp, r.p)) { r.t = 99; continue; }
+      if (y1 < 0) { const f = y0 > 0 ? y0 / (y0 - y1) : 0; _gp.lerp(r.p, f); gunHit(_gp.x, groundHeight(_gp.x, _gp.z), _gp.z, r.big); r.t = 99; continue; }
+    }
+  }
+  // tracers burn for about two seconds; drawn as streaks that thicken with distance so they stay visible
+  for (const r of rounds) {
+    if (!r.tr || r.t > 2.2 || n >= NTR) continue;
+    const sp = r.v.length(), d = r.p.distanceTo(camera.position), w = Math.max(r.big ? .12 : .08, d * .0008), len = Math.max(2.5, sp * .022, w * 8);
+    _gd.copy(r.v).divideScalar(sp); _gq.setFromUnitVectors(_gz, _gd);
+    _gm.compose(_gp.copy(r.p).addScaledVector(_gd, -len / 2), _gq, _gs.set(w, w, len)); trMesh.setMatrixAt(n++, _gm);
+  }
+  trMesh.count = n; trMesh.instanceMatrix.needsUpdate = true;
+  for (const h of hits) {
+    if (h.t > 1.6) { h.m.visible = false; continue; }
+    h.t += dt; const a = Math.min(1, h.t * 12);
+    if (h.sp) h.m.scale.set((.5 + h.t * 1.2) * h.k, (2.2 * a + h.t * 1.5) * h.k * (1 - h.t / 2), (.5 + h.t * 1.2) * h.k);
+    else h.m.scale.setScalar((.5 + h.t * 2.2) * h.k);
+    h.m.position.y += (h.sp ? 0 : .8) * dt; h.m.material.opacity = .7 * (1 - h.t / 1.6);
+  }
+}
+
+/* ---------- free fly for kids: no crashing, and slow target planes to shoot ---------- */
+let kids = false, popped = 0;
+// puts the airplane back in level flight, clean and trimmed at a comfortable cruise, at height alt above the ground
+function kidsFly(x, z, hdg, alt) {
+  const v = APPR[T.id].v * 1.35, ps = ac.ammo;
+  ac.crashed = false; ac.flaps = ac.flapPos = 0; if (T.retract) { ac.gear = 0; ac.gearPos = 0; }
+  ac.cat = null; ac.trap = null; ac.rev = 0; ac.w.set(0, 0, 0);
+  const st = solveTrim(v, 0, 0);
+  ac.pos.set(x, groundHeight(x, z) + alt, z);
+  ac.q.setFromEuler(_eu.set(st.alpha, -hdg * D2R, 0, 'YXZ'));
+  ac.vel.set(0, 0, -v).applyQuaternion(new THREE.Quaternion().setFromEuler(_eu.set(0, -hdg * D2R, 0, 'YXZ')));
+  ac.ias = ac.V = v; ac.thr = st.thr; ac.spool = Math.min(st.thr / .8, 1); ac.trim = st.trim; ac.onGround = false; ac.airTime = 10;
+  ac.rpm = T.eng.jet ? 62 + 38 * ac.spool : T.eng.idle + 1400; ac.ammo = ps;
+  for (const w of T.wheels) w.was = false;
+}
+// five chunky, brightly painted planes, twice the size of a Cub, circling the field slowly at different heights
+const targets = [];
+function buildTargets() {
+  const cols = [0xe8392f, 0x2f7fe8, 0x37c24a, 0xff9a1f, 0xa24be0], cx = rwX(0, 0), cz = rwZ(0, 0);
+  cols.forEach((c, i) => {
+    const g = new THREE.Group(), body = new THREE.MeshLambertMaterial({ color: c }), wht = new THREE.MeshLambertMaterial({ color: 0xffffff }), dk = new THREE.MeshLambertMaterial({ color: 0x222222 });
+    const box = (w, h, d, m, x, y, z) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, z); g.add(b); return b; };
+    box(1.8, 1.8, 9, body, 0, 0, 0); box(1.2, 1.2, 1, wht, 0, 0, -4.9); box(1.3, .9, 1.8, new THREE.MeshLambertMaterial({ color: 0x9fd6ff }), 0, 1.2, -1.6);
+    box(16, .35, 2.6, body, 0, .5, -1); box(4, .4, 2.62, wht, -5.5, .5, -1); box(4, .4, 2.62, wht, 5.5, .5, -1);
+    box(6, .3, 1.6, body, 0, .3, 4); box(.3, 2.4, 1.8, wht, 0, 1.6, 4);
+    const pr = box(4, .3, .2, dk, 0, 0, -5.5);
+    g.visible = false; scene.add(g);
+    targets.push({ g, pr, c, i, R: 520 + i * 110, a: i * 1.26, w: (i % 2 ? -1 : 1) * 26 / (520 + i * 110), alt: 150 + i * 55, cx, cz, hp: 0, dead: 0, flash: 0, body });
+  });
+}
+function hitTarget(p0, p1) {
+  for (const tg of targets) {
+    if (tg.dead > 0) continue;
+    // distance from the plane's centre to this bit of the round's path; 10 m is generous on purpose
+    _gd.subVectors(p1, p0); const L2 = _gd.lengthSq(); let f = L2 > 0 ? _gs.subVectors(tg.g.position, p0).dot(_gd) / L2 : 0; f = clamp(f, 0, 1);
+    if (_gs.copy(p0).addScaledVector(_gd, f).distanceTo(tg.g.position) < 10) {
+      tg.hp++; tg.flash = .08;
+      if (tg.hp >= 4) { tg.dead = 6; tg.g.visible = false; popped++; toast(popped === 1 ? 'Got one!' : `Got one! ${popped} down`, 1500);
+        for (let k = 0; k < 8; k++) { const h = hits[hitI++ % hits.length]; h.t = 0; h.k = 3.5; h.sp = false; h.m.visible = true; h.m.position.copy(tg.g.position).add(_gs.set((Math.random() - .5) * 10, (Math.random() - .5) * 6, (Math.random() - .5) * 10)); h.m.material.color.set(k % 2 ? tg.c : 0xffffff); } }
+      return true;
+    }
+  }
+  return false;
+}
+function updateTargets(dt) {
+  if (!kids || atSea || onMoon) { for (const tg of targets) tg.g.visible = false; return; }
+  if (!targets.length) buildTargets();
+  const run = state === 'flying';
+  for (const tg of targets) {
+    if (run) { tg.a += tg.w * dt; if (tg.dead > 0) { tg.dead -= dt; if (tg.dead <= 0) { tg.hp = 0; } } }
+    tg.g.visible = tg.dead <= 0;
+    const x = tg.cx + Math.cos(tg.a) * tg.R, z = tg.cz + Math.sin(tg.a) * tg.R, y = FIELD + tg.alt + Math.sin(tg.a * 3 + tg.i) * 12;
+    tg.g.position.set(x, y, z);
+    // nose along the circle, banked into the turn
+    const dir = Math.sign(tg.w); tg.g.rotation.set(0, -tg.a - (dir > 0 ? Math.PI : 0), -dir * .35, 'YXZ');
+    if (run) tg.pr.rotation.z += 40 * dt;
+    if (tg.flash > 0) { tg.flash -= dt; tg.body.emissive.setHex(tg.flash > 0 ? 0xffffff : 0); }
+  }
 }
 
 /* ---------- toast ---------- */
@@ -3722,7 +3882,11 @@ function initAudio() {
     const so = ctx.createOscillator(); const sg = ctx.createGain(); sg.gain.value = 0; so.connect(sg); sg.connect(master); so.start();
     const o4 = ctx.createOscillator(); o4.type = 'sine'; const g4 = ctx.createGain(); g4.gain.value = 0; o4.connect(g4); g4.connect(master); o4.start(); // turbine whine
     const roar = mk('lowpass', 520, .6), abr = mk('lowpass', 170, .9), hiss = mk('bandpass', 3800, .7);   // jet: exhaust roar, burner rumble, intake hiss
-    au = { ctx, master, lp, eg, o1, o2, o3, g3, o4, g4, wg, rg, so, sg, rain, drum, roar, abr, hiss };
+    // guns: filtered noise chopped by a square wave at the firing rate, so a .50 cal hammers and the Vulcan buzzes
+    const gsrc = ctx.createBufferSource(); gsrc.buffer = nb; gsrc.loop = true; const gf = ctx.createBiquadFilter(); gf.type = 'lowpass'; gf.frequency.value = 1500; gf.Q.value = .7;
+    const gun = ctx.createGain(); gun.gain.value = 0; const chop = ctx.createGain(); chop.gain.value = .5; const lfo = ctx.createOscillator(); lfo.type = 'square'; lfo.frequency.value = 26; const lg = ctx.createGain(); lg.gain.value = .5;
+    lfo.connect(lg); lg.connect(chop.gain); gsrc.connect(gf); gf.connect(gun); gun.connect(chop); chop.connect(master); gsrc.start(); lfo.start();
+    au = { ctx, master, lp, eg, o1, o2, o3, g3, o4, g4, wg, rg, so, sg, rain, drum, roar, abr, hiss, gun, lfo, gf };
     if (ctx.state !== 'running') ctx.resume();
   } catch (e) { au = null; }
 }
@@ -3754,6 +3918,7 @@ function updateAudio() {
   au.g4.gain.setTargetAtTime(T.eng.turbo && !ac.crashed ? (inside ? .004 : .01) + pw * .006 : jet ? (inside ? .006 : .012) * (.4 + n2) : 0, t, .2);
   const tf = jet ? clamp(ac.thrust / T.eng.Tab, 0, 1) : 0;
   au.roar.gain.setTargetAtTime(jet ? (inside ? .1 : .22) * (.18 + 1.4 * tf) : 0, t, .15); au.abr.gain.setTargetAtTime(jet ? (inside ? .25 : .5) * (ac.ab || 0) : 0, t, .15); au.hiss.gain.setTargetAtTime(jet ? (inside ? .015 : .03) * n2 : 0, t, .2);
+  { const g = gunOf(T); au.lfo.frequency.setTargetAtTime(Math.min(110, g.rpm / 60 * g.p.length), t, .01); au.gf.frequency.setTargetAtTime(g.m > .07 ? 900 : 1500, t, .01); au.gun.gain.setTargetAtTime(ac.gunF > 0 ? (inside ? .6 : .4) : 0, t, .012); }
   const gs = Math.hypot(ac.vel.x, ac.vel.z); au.rg.gain.setTargetAtTime(ac.onGround && !ac.crashed ? Math.min(.5, gs / 25) : 0, t, .05);
   // stall warning: the 172's reed whistle, the 180's horn, the Carbon Cub G3X's AOA tone; the J-3 has none
   let s = 0; const near = !ac.onGround && !ac.crashed && ac.alpha > T.stallA - .045;
@@ -3781,13 +3946,14 @@ async function wake() {
 }
 function syncRunwayLabels() {
   if (atSea) { $('bTakeoff').textContent = T.hook ? '▶ Catapult 1 · bow' : '▶ Deck run · from the stern'; $('bApproach').textContent = T.hook ? '▶ Carrier approach · 1 mile' : '▶ Short final · straight deck'; return; }
-  const r = windRunway(); $('bTakeoff').textContent = `▶ Line up · Runway ${r}`; $('bApproach').textContent = `▶ Short final · Runway ${r}`;
+  const r = windRunway(); $('bTakeoff').textContent = `▶ Line up · Runway ${r}`; $('bApproach').textContent = kids ? '▶ Start in the air · targets ahead' : `▶ Short final · Runway ${r}`;
 }
 function begin(kind) {
   if (atSea) { kind === 'runway' ? resetRunway() : resetApproach();
     toast(kind === 'runway' ? (T.hook ? 'Catapult 1 · full power and hold it · the shot comes in two seconds' : 'Deck run · 27 knots over the deck · full power') : T.hook ? 'Ship ahead · fly the ball, line-up and 15 units · hook is down' : 'Straight-deck landing · no hook, so stop with the brakes', 4200); }
   else if (onMoon) { kind === 'runway' ? resetRunway() : resetApproach(); toast(`One-sixth gravity · it flies at about 40% of its Earth speeds · ${kind === 'runway' ? 'ease it off early' : 'slow and shallow'}`, 4600); }
   else if (kind === 'runway') { resetRunway(); toast(T.to || (T.tail ? 'Full power · right rudder · tail up, then fly it off' : 'Full power · keep the nosewheel light · rotate at 55 KIAS'), 4200); }
+  else if (kids) { resetApproach(); kidsFly(ac.pos.x, ac.pos.z, heading(), 260); toast(`Free fly · you can't crash · hold ${coarse ? 'GUNS' : 'K'} to shoot the target planes`, 4200); }
   else { resetApproach(); toast(`Runway ${windRunway()} ahead · trimmed for the approach`, 4000); }
   closeMenu(); state = 'flying'; camSnap = true; keys.clear(); last = performance.now(); acc = 0;
   initAudio(); wake(); updateHUD(); fillTrees(ac.pos.x, ac.pos.z, true);
@@ -3807,6 +3973,9 @@ bindToggle('tAuto', 'autoRud', () => document.body.classList.toggle('autorud', !
 document.body.classList.toggle('autorud', !!settings.autoRud);
 bindToggle('tTrim', 'autoTrim', () => document.body.classList.toggle('autotrim', !!settings.autoTrim));
 document.body.classList.toggle('autotrim', !!settings.autoTrim);
+bindToggle('tGuns', 'guns', () => { syncGuns(); toast(settings.guns ? (T.gun ? `Guns armed · ${T.gun.name}, the real thing` : 'Guns armed · two .50 cals, just for fun') + ' · K to fire' : 'Guns off', 2200); });
+function syncGuns() { document.body.classList.toggle('guns', !!settings.guns || kids); }
+syncGuns();
 bindToggle('tData', 'data', () => document.body.classList.toggle('nodata', !settings.data));
 bindToggle('tHigh', 'high', () => { applyQuality(); resize(); });
 // ultra low needs a fresh start (the renderer is made without antialiasing or shadows), so it reloads with or without ?lite
@@ -3840,10 +4009,12 @@ wxSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => 
 applyWeather(settings.wx); syncWx();
 const locSeg = $('locSeg');
 const LOC_TXT = { earth: [$('mEyebrow').textContent, $('mSub').innerHTML],
+  kids: ['FREE FLY · R-LAW · NO CRASHING', 'Fly anywhere and you can\'t crash: hit the ground or a tree and you bounce back up into the sky. Five bright target planes circle the field, slow and easy to hit. Hold <b>K</b> (or <b>GUNS</b>) to shoot them. The guns never run out here.'],
   sea: ['USS THEODORE ROOSEVELT · CVN-71 · GULF OF MEXICO', 'Nimitz-class carrier 80 nm south of Galveston: <b>1,092 ft</b> flight deck, landing area angled <b>9°</b>, four wires, <b>27 kt</b> over the deck. Catch a wire in the Tomcat or the Brick Jet, or take anything else off the bow. Paddles is on the radio.'] };
 function syncLoc() {
   locSeg.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.l === settings.loc))); document.body.classList.toggle('moon', onMoon); document.body.classList.toggle('sea', atSea);
-  const L = LOC_TXT[atSea ? 'sea' : 'earth']; $('mEyebrow').textContent = L[0]; $('mSub').innerHTML = L[1]; syncRunwayLabels();
+  document.body.classList.toggle('kids', kids); syncGuns();
+  const L = LOC_TXT[atSea ? 'sea' : kids ? 'kids' : 'earth']; $('mEyebrow').textContent = L[0]; $('mSub').innerHTML = L[1]; syncRunwayLabels();
 }
 locSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
   if (b.dataset.l === settings.loc) return;
@@ -3897,6 +4068,8 @@ function frame(now) {
   // windsock swings toward where the wind is going and fills with speed (15 kt for full)
   { const wv = windVec(6), ws = Math.hypot(wv.x, wv.z) * KT; sock.rotation.set(-(Math.PI / 2) * (1 - clamp(ws / 15, .08, 1)) * .9, Math.atan2(-wv.x, -wv.z) + Math.PI, 0, 'YXZ'); }
   updateJatoSmoke(dt);
+  updateGuns(dt);
+  updateTargets(dt);
   if (smokeOn) smoke.forEach((s, i) => { s.t += dt; if (s.t < 0) return; const life = s.t % 5; s.mesh.visible = true; s.mesh.position.set(ac.pos.x + Math.sin(i * 2.1) * life * 1.5, ac.pos.y + life * 6, ac.pos.z + life * 2); s.mesh.scale.setScalar(1 + life * 1.5); });
   updateCamera(dt);
   fillTrees(view === 'flightline' ? (camera.position.x + ac.pos.x) / 2 : ac.pos.x, view === 'flightline' ? (camera.position.z + ac.pos.z) / 2 : ac.pos.z);
@@ -3917,7 +4090,7 @@ function frame(now) {
 }
 window.__rf = { ac, TYPES, models, inp, step, setType: id => setType(id), begin, settings, groundHeight, solveTrim, get T() { return T; }, resetRunway, resetApproach, applyWeather, setWorld, get onMoon() { return onMoon; }, get atSea() { return atSea; }, SEA, ldU, ldV, ldX, ldZ, DECK, WIRES, LENS, get G() { return G; }, get wx() { return wx; }, rainMesh: rain, deckLo, camera, updateWeather, scene, rwU, rwV, FIELD, RW_LEN, heading, treeHit, windVec, fillTrees, cabins, get view() { return view; }, set view(v) { view = v; }, get state() { return state; } };
 setType(settings.ac);
-if (settings.loc === 'moon' || settings.loc === 'sea') { setWorld(settings.loc); resetRunway(); } syncLoc();
+if (settings.loc === 'moon' || settings.loc === 'sea' || settings.loc === 'kids') { setWorld(settings.loc); resetRunway(); } syncLoc();
 applyQuality();
 resize();
 updateHUD();
