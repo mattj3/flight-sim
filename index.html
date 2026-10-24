@@ -1156,25 +1156,40 @@ function buildModel180(t) {
 /* ---------- exterior model: Lockheed C-130H Hercules ---------- */
 // 97 ft 9 in long, 38 ft 3 in to the top of the fin, 132 ft 7 in span, 14 ft 3 in main gear track. The fuselage section is
 // squarer on top than the light aircraft (exponent 3), so the loft, the bands and the window cut-outs are built with that.
-const HERC_GREY = 0x899095, HERC_DARK = 0x6f767b, HERC_RADOME = 0x6a7074;
-const HERC_SECS = [[-13.5, .12, .1, .2], [-13.0, .75, .7, .1], [-12.6, 1.15, 1.06, .06], [-12.2, 1.5, 1.375, .075], [-11.8, 1.75, 1.625, .125],
-  [-11.4, 1.95, 1.79, .14], [-11.0, 2.08, 1.885, .135], [-10.0, 2.15, 1.95, .1], [4.5, 2.15, 1.95, .1],
+const HERC_GREY = 0x949ba1, HERC_DARK = 0x7c8389, HERC_RADOME = 0x8f969b;
+// the blunt nose: the forward fuselage ends in a ring that carries a big round radome, low on the front, with the flight
+// deck glazing sitting high and set back above it
+const HN = 2.6;   // fuselage section: rounded on top, flatter underneath
+const HERC_SECS = [[-12.95, 1.66, 1.455, -.305], [-12.7, 1.8, 1.56, -.24], [-12.4, 1.92, 1.675, -.155], [-12.05, 2.0, 1.785, -.065], [-11.7, 2.07, 1.865, .015],
+  [-11.3, 2.12, 1.92, .07], [-10.8, 2.15, 1.945, .095], [-10.0, 2.15, 1.95, .1], [4.5, 2.15, 1.95, .1],
   [7.0, 2.05, 1.65, .4], [9.0, 1.85, 1.35, .7], [11.5, 1.45, .95, 1.15], [14, .95, .6, 1.5], [16.0, .4, .3, 1.75], [16.4, .1, .1, 1.8]];
-// the flight deck glazing, in body coordinates: windshield, eyebrow windows either side of the overhead console,
-// side windows, and the chin windows down by the pilots' feet
+// Flight deck glazing, as on the photos: four windshield panes (two big centre panes and an angled corner pane each side),
+// two side windows, three eyebrow windows on the roof shoulder and one low side window each side. Panes are separated by
+// painted frames. Front panes are laid out by x and y; the rest by z and the angle around the fuselage section.
+const HERC_RADOME_SECS = [[-14.25, .12, .12, -.38], [-14.12, .72, .66, -.37], [-13.9, 1.1, .98, -.35], [-13.58, 1.4, 1.24, -.32], [-13.22, 1.57, 1.38, -.3], [-12.92, 1.62, 1.42, -.3]];
+const HW_Y0 = 1.36, HW_Y1 = 1.88;
+const hwC = y => lerp(.86, .6, (y - HW_Y0) / (HW_Y1 - HW_Y0)), hwO = y => lerp(1.6, 1.12, (y - HW_Y0) / (HW_Y1 - HW_Y0));
+const HERC_FRONT = [[.07, hwC], [y => hwC(y) + .11, hwO]];
+const HERC_SIDE = [   // [z0, z1, ang0, ang1] in degrees above the side
+  [-11.85, -11.42, 28, 52], [-11.32, -10.65, 28, 52],
+  [-11.92, -11.64, 56, 67], [-11.56, -11.28, 56, 67], [-11.2, -10.92, 56, 67],
+  [-11.75, -11.4, 4, 18]];
+function hercAng(x, y, z) { const [, hw, hh, yc] = secAt(HERC_SECS, z); return Math.atan2((y - yc) / hh, Math.abs(x) / hw) * R2D; }
+function hercAt(s, z, ang) {   // the skin point at section z, angle ang (degrees) on side s
+  const [, hw, hh, yc] = secAt(HERC_SECS, z), t = Math.tan(ang * D2R), n = t >= 0 ? HN : NBOT;
+  const ex = 1 / Math.pow(1 + Math.pow(Math.abs(t), n), 1 / n); return [s * hw * ex, yc + hh * t * ex, z];
+}
 function HERC_WIN(x, y, z) {
   const ax = Math.abs(x);
-  if (z < -10.9 && y > 1.2 && y < 1.86 && ax < lerp(1.45, 1.0, (y - 1.2) / .66)) return true;
-  if (y >= 1.86 && z > -11.7 && z < -10.85 && ax > .55 && ax < 1.0) return true;
-  if (ax > 1.4 && y > 1.18 && y < 1.74 && z > -11.35 && z < -10.05) return true;
-  if (z < -11.4 && y > -.15 && y < .55 && ax > .35 && ax < 1.15) return true;
+  if (z < -11 && y > HW_Y0 && y < HW_Y1) for (const [a, b] of HERC_FRONT) { const lo = typeof a === 'function' ? a(y) : a; if (ax > lo && ax < b(y)) return true; }
+  if (ax > .3 && z > -12.2 && z < -10.5) { const g = hercAng(x, y, z); for (const [z0, z1, a0, a1] of HERC_SIDE) if (z > z0 && z < z1 && g > a0 && g < a1) return true; }
   return false;
 }
 // a finely divided copy of a loft between z0 and z1, grown or shrunk by `grow`, keeping only the faces `keep` accepts
 function shellGeo(secs, z0, z1, nt, nb, grow, keep, M = 280) {
   // rings close together across the front of the nose, where the skin faces forward and a small step in z is a long way
   // over the surface, so the edges of the window cut-outs stay clean
-  const zs = []; for (let z = z0; z < z1; z += z > -12.55 && z < -11.2 ? .007 : .035) zs.push(z); zs.push(z1);
+  const zs = []; for (let z = z0; z < z1; z += z > -12.96 && z < -10.6 ? .007 : .035) zs.push(z); zs.push(z1);
   const pos = [], base = [], idx = [], rows = zs.length - 1;
   for (let i = 0; i <= rows; i++) {
     const z = zs[i], [, hw0, hh0, yc] = secAt(secs, z), hw = Math.max(.01, hw0 + grow), hh = Math.max(.01, hh0 + grow);
@@ -1192,7 +1207,7 @@ function shellGeo(secs, z0, z1, nt, nb, grow, keep, M = 280) {
   return g;
 }
 // where a forward-facing line of sight at (x, y) first meets the nose
-function surfZ(secs, x, y, z0 = -13.5, z1 = -9.5) {
+function surfZ(secs, x, y, z0 = -12.97, z1 = -9.5) {
   const inside = z => { const [, hw, hh, yc] = secAt(secs, z); return Math.abs(y - yc) < hh && Math.abs(x) <= halfX(hw, hh, yc, y); };
   let a = z0, b = z1; if (!inside(b)) return b;
   for (let i = 0; i < 30; i++) { const m = (a + b) / 2; if (inside(m)) b = m; else a = m; }
@@ -1214,27 +1229,38 @@ function prop130(x, y, z, R, p) {
 }
 function buildModel130(t) {
   const root = new THREE.Group(), surf = {}; root.visible = false; plane.add(root);
-  const ntSave = NTOP, nbSave = NBOT; NTOP = 3;
+  const ntSave = NTOP, nbSave = NBOT; NTOP = HN;
   const secs = HERC_SECS;
-  loft(secs.slice(0, 3), HERC_RADOME, root);
-  loft(secs.slice(2), HERC_GREY, root);
+  loft(secs, HERC_GREY, root);
+  NTOP = NBOT = 2.1; loft(HERC_RADOME_SECS, HERC_RADOME, root); NTOP = HN; NBOT = nbSave;
   // glazing, laid just proud of the skin over exactly the faces the cabin cuts out
-  root.add(new THREE.Mesh(shellGeo(secs, -13.4, -9.9, NTOP, NBOT, .012, HERC_WIN), new THREE.MeshPhongMaterial({ color: GLASS, specular: 0x30383c, shininess: 90, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })));
-  // window frames, shared with the flight deck
-  const fr = [], sp = (x, y) => [x, y, surfZ(secs, x, y)];
-  const top = (x, z) => { const [, hw, hh, yc] = secAt(secs, z); return yc + hh * Math.pow(Math.max(0, 1 - Math.pow(Math.abs(x) / hw, 3)), 1 / 3); };
-  for (const u of [-1, -.62, 0, .62, 1]) { const l = []; for (let j = 0; j <= 4; j++) { const f = j / 4; l.push(sp(u * lerp(1.45, 1.0, f), lerp(1.2, 1.86, f))); } fr.push(l); }
-  { const l = []; for (let i = 0; i <= 12; i++) l.push(sp(lerp(-1.45, 1.45, i / 12), 1.2)); fr.push(l); }
-  { const l = []; for (let i = 0; i <= 8; i++) l.push(sp(lerp(-1, 1, i / 8), 1.86)); fr.push(l); }
+  root.add(new THREE.Mesh(shellGeo(secs, -12.95, -10.5, NTOP, NBOT, .012, HERC_WIN), new THREE.MeshPhongMaterial({ color: GLASS, specular: 0x30383c, shininess: 90, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })));
+  // radome seam and the small dome on the roof
+  { const d = new THREE.Mesh(new THREE.SphereGeometry(.22, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshPhongMaterial({ color: 0xc8ccd0, transparent: true, opacity: .8, shininess: 80 })); d.position.set(0, 2.03, -10.2); root.add(d); }
+  // pane outlines on the skin, for the frames inside the flight deck
+  const fr = [], sp = (x, y) => [x, y, surfZ(secs, x, y)], N = 8;
   for (const s of [-1, 1]) {
-    for (const x of [.55, 1.0]) { const z0 = surfZ(secs, s * x, 1.86), l = []; for (let i = 0; i <= 4; i++) { const z = lerp(z0, -10.85, i / 4); l.push([s * x, Math.max(1.86, top(x, z)), z]); } fr.push(l); }
-    { const l = []; for (let i = 0; i <= 3; i++) { const x = lerp(.55, 1.0, i / 3); l.push([s * x, top(x, -10.85), -10.85]); } fr.push(l); }
-    const sx = (z, y) => s * halfX(...secAt(secs, z).slice(1), y);
-    for (const z of [-11.35, -10.7, -10.05]) fr.push([[sx(z, 1.18), 1.18, z], [sx(z, 1.46), 1.46, z], [sx(z, 1.74), 1.74, z]]);
-    for (const y of [1.18, 1.74]) { const l = []; for (let i = 0; i <= 6; i++) { const z = lerp(-11.35, -10.05, i / 6); l.push([sx(z, y), y, z]); } fr.push(l); }
+    for (const [a, b] of HERC_FRONT) {
+      const lo = y => typeof a === 'function' ? a(y) : a, l = [];
+      for (let i = 0; i <= N; i++) l.push(sp(s * lerp(lo(HW_Y0), b(HW_Y0), i / N), HW_Y0));
+      for (let i = 1; i <= N; i++) { const y = lerp(HW_Y0, HW_Y1, i / N); l.push(sp(s * b(y), y)); }
+      for (let i = 1; i <= N; i++) l.push(sp(s * lerp(b(HW_Y1), lo(HW_Y1), i / N), HW_Y1));
+      for (let i = 1; i <= N; i++) { const y = lerp(HW_Y1, HW_Y0, i / N); l.push(sp(s * lo(y), y)); }
+      fr.push(l);
+    }
+    for (const [z0, z1, a0, a1] of HERC_SIDE) {
+      const l = [];
+      for (let i = 0; i <= N; i++) l.push(hercAt(s, lerp(z0, z1, i / N), a0));
+      for (let i = 1; i <= N; i++) l.push(hercAt(s, z1, lerp(a0, a1, i / N)));
+      for (let i = 1; i <= N; i++) l.push(hercAt(s, lerp(z1, z0, i / N), a1));
+      for (let i = 1; i <= N; i++) l.push(hercAt(s, z0, lerp(a1, a0, i / N)));
+      fr.push(l);
+    }
   }
   t.frames = fr;
-  for (const l of fr) for (let i = 1; i < l.length; i++) outside.push(bar(l[i - 1], l[i], .03, HERC_DARK, root, 5));
+  // dark window seals on the outside, over the edges of the glazing
+  const out = ([x, y, z]) => { const [, hw, hh, yc] = secAt(secs, z); return [x * (hw + .012) / hw, yc + (y - yc) * (hh + .012) / hh, z]; };
+  for (const l of fr) for (let i = 1; i < l.length; i++) outside.push(bar(out(l[i - 1]), out(l[i]), .022, 0x2b2f32, root, 5));
   // markings: low-visibility dark grey insignia and lettering, the crew door and the paratroop doors
   const ins = canvasTex(512, 256, (g, w, h) => {
     g.clearRect(0, 0, w, h); g.fillStyle = '#40464a'; const cx = w / 2, cy = h / 2, R = 104;
@@ -1289,7 +1315,7 @@ function buildModel130(t) {
     loft([[-4.2, .05, .05, 0], [-3.3, .4, .4, 0], [-2.0, .6, .6, 0], [1.6, .6, .6, 0], [3.4, .32, .32, 0], [4.3, .05, .05, 0]], HERC_GREY, pivot(s * 7.5, 1.0, 0, root));
     box(.12, .45, 2.8, HERC_GREY, s * 7.5, 1.72, -.6, root);
   }
-  NTOP = 3; NBOT = nbSave;
+  NTOP = HN; NBOT = nbSave;
   // tail: the tall fin with its dorsal fillet and a big rudder; the stabiliser and elevators on the tail cone
   { const fin = new THREE.Mesh(tailGeo(tailShape([[0, 0], [6.4, 0], [6.1, 6.9], [5.6, 6.9], [3.0, 1.3], [1.8, .3, 0, 0]]), .3).rotateY(-Math.PI / 2), pmat(HERC_GREY));
     fin.position.set(0, 2.0, 8.0); fin.castShadow = true; root.add(fin); }
@@ -1590,11 +1616,11 @@ function switchPanel(g, W, H, px, title, seed) {
 }
 function cabin130() {
   const p = new THREE.Group(), C = {}, t = TYPES.c130, WALL = 0x6c726f, DARK = 0x26292b, PANEL = 0x34383b, FLOOR = 0x3c403e, FRAME = 0x45494c, SEAT = 0x3c413c;
-  { const m = new THREE.Mesh(shellGeo(HERC_SECS, -13.4, -8.3, 3, NBOT, -.05, (x, y, z) => !HERC_WIN(x, y, z)),
+  { const m = new THREE.Mesh(shellGeo(HERC_SECS, -12.95, -8.3, HN, NBOT, -.05, (x, y, z) => !HERC_WIN(x, y, z)),
       new THREE.MeshLambertMaterial({ color: WALL, emissive: new THREE.Color(WALL).multiplyScalar(.22), side: THREE.BackSide, fog: false })); p.add(m); }
   // frames sit on the inside of the shell, over the edges of the cut-outs
   const inward = ([x, y, z]) => { const [, hw, hh, yc] = secAt(HERC_SECS, z); return [x * (hw - .05) / hw, yc + (y - yc) * (hh - .05) / hh, z]; };
-  for (const l of t.frames) for (let i = 1; i < l.length; i++) cbar(inward(l[i - 1]), inward(l[i]), .045, FRAME, p, 6);
+  for (const l of t.frames) for (let i = 1; i < l.length; i++) cbar(inward(l[i - 1]), inward(l[i]), .022, FRAME, p, 5);
   cbox(3.6, .04, 3.8, FLOOR, 0, .4, -10.2, p);
   cbox(4.4, 3.2, .05, WALL, 0, .6, -8.32, p); cbox(.75, 1.75, .02, DARK, .9, 1.28, -8.35, p);           // bulkhead and the door to the cargo hold
   // main panel, glareshield, and the knee panel down to the rudder pedals
