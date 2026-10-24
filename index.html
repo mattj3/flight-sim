@@ -126,7 +126,9 @@ body.moon .earth-only,body.sea .land-only{display:none}
 .jet-only,.gear-only,.rev-only,.jato-only{display:none!important}
 body.rev .btn.rev-only,body.jato .btn.jato-only{display:block!important}
 body.jato #hint .jato-only{display:inline!important}
-body.gear .col.gear-only{display:flex!important}
+.xcol{display:none!important}
+body.gear .col.xcol,body.jato .col.xcol,body.rev .col.xcol{display:flex!important}
+body.gear .btn.gear-only{display:block!important}
 body.gear #hint .gear-only{display:inline!important}
 body.jet .btn.jet-only{display:block!important}
 body.jet .cell.jet-only,body.jet .col.jet-only{display:flex!important}
@@ -183,8 +185,8 @@ body:not(.touch) .touch-help{display:none}
     <button class="btn" id="flapDn" type="button">FLAP ▼</button>
     <button class="btn" id="brk" type="button">BRAKE</button>
   </div>
-  <div class="col gear-only">
-    <button class="btn" id="bGear" type="button">GEAR</button>
+  <div class="col xcol">
+    <button class="btn gear-only" id="bGear" type="button">GEAR</button>
     <button class="btn jet-only" id="bHook" type="button">HOOK</button>
     <button class="btn rev-only" id="bRev" type="button">REV</button>
     <button class="btn jato-only" id="bJato" type="button">JATO</button>
@@ -827,7 +829,7 @@ const TYPES = {
     tail: true, threePt: 11.5, mainL: [-.9, -1.15, -.42], tailZ: 4.5, wheelR: .21, defl: [.08, .04], zeta: [.55, .5],
     steer: 22, steerV: 10, muLat: [.55, .4], muRoll: .045, muBrake: .26, sink: 3.4, prop: [0, .1, -2.12, .91], tip: [5.37, 1.02, .3],
     vRef: 30, kA: 9, kE: .36, a0: .02, roll: 2.4, rollD: 3.6, yaw: 1.9, advY: .32, slip: .3, pfac: .1, gyro: .3, trimRange: .4,
-    jato: { n: 2, F: 1200, burn: 8, cant: 0, p: [0, .35, 0], shots: 3, fx: [[-1.65, .8, .9], [1.65, .8, .9]], puff: .45, msg: 'Rockets! 540 lb of thrust for 8 seconds' },   // not in any Piper catalogue: two hobby rockets under the wings, three salvos a flight
+    jato: { n: 2, F: 1200, burn: 8, cant: 0, p: [0, .35, 0], shots: 3, fx: [[-1.5, .8, .15], [1.5, .8, .15]], puff: .45, msg: 'Rockets! 540 lb of thrust for 8 seconds' },   // not in any Piper catalogue: two hobby rockets under the wings, three salvos a flight
     eye: [0, .68, .78], fov: 64, tilt: -.05,
     placard: [['VS', 38], ['VX', 45], ['VY', 55], ['CRUISE', 73], ['VNE', 122]],
     tips: 'No flaps, no electrics, no stall warning. On the ground the nose blocks the view ahead, so look out the side or <b>S-turn</b> while taxiing. Full power, ease the tail up with a little forward stick, hold right rudder, and it flies itself off at about 45 mph. Glide at 55 to 60 mph, then hold it off for a three-point landing. Not in the Piper catalogue: <b>J</b> lights the two rockets under the wings, three times a flight.',
@@ -1108,7 +1110,7 @@ function buildModel(t) {
   surf.prop = prop(t, root);
   // the fun part: a rocket under each wing on a little pylon, red nose and fins, with its flame
   if (t.jato) { surf.jatoFl = [];
-    for (const s of [-1, 1]) { const g = pivot(s * 1.65, .8, .2, root);
+    for (const s of [-1, 1]) { const g = pivot(s * 1.5, .8, -.55, root);
       box(.03, .12, .3, 0x9a9a9a, 0, .1, 0, g);
       const tb = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .8, 12).rotateX(Math.PI / 2), pmat(0xd8d8d2, 'metal')); tb.castShadow = true; g.add(tb);
       const nc = new THREE.Mesh(new THREE.ConeGeometry(.06, .2, 12).rotateX(-Math.PI / 2).translate(0, 0, -.5), pmat(0xc8241c)); g.add(nc);
