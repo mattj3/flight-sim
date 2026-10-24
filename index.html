@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="R-Law Fly-In">
-<meta name="description" content="Fly a Cub, a Skywagon, a Hercules or an F-14 Tomcat: a grass-strip fly-in in the East Texas piney woods, a carrier in the Gulf, or the Moon. Works with keyboard, gamepad or touch.">
+<meta name="description" content="Fly a Cub, a Skywagon, a Hercules, an F-14 Tomcat or a toy-brick jet: a grass-strip fly-in in the East Texas piney woods, a carrier in the Gulf, or the Moon. Works with keyboard, gamepad or touch.">
 <title>R-Law Fly-In</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -881,6 +881,23 @@ const TYPES = {
     placard: [['VS APPR', 112], ['ON-SPEED', 130], ['FLAPS', 225], ['GEAR', 280], ['MACH', '2.34']],
     tips: 'Two TF30s, a wing that sweeps itself from 20° to 68° as you speed up, and a tailhook. Throttle past 80% lights the burners. <b>G</b> raises and lowers the gear, <b>H</b> the hook. At sea, <b>Catapult</b> puts you on the bow cat: run it up to full power and hold it, and the shot comes two seconds later. For the trap, fly <b>15 units</b> of angle of attack (the amber donut on the indexer, about 130 knots) with power, keep the meatball centred against the green datum lights and the line-up on the centreline, and do not flare. Go to full power as you touch down, in case the hook skips: then it is a bolter and you fly away. After the trap, idle and <b>H</b> to raise the hook.',
     to: 'Flaps down · full power, burner if you like · rotate at about 140 knots', stall: 'aoa', reg: '160403'
+  },
+  brick: {
+    id: 'brick', name: 'Brick Jet', short: 'Brick Jet', blurb: 'toy bricks at full size · afterburner, studs, tailhook, minifig pilot', unit: 'kt',
+    // the toy-brick fighter off the kitchen table, scaled up to 1 stud = 55 cm: a 14 t jet with a delta of studded black
+    // wedge plates, one big afterburning engine and a minifig in the seat. Built for fun, not from any book: quick in roll,
+    // 9 g, a little draggy (studs), happy to land on the carrier
+    mass: 14000, I: [1.9e5, 2.1e5, 4.5e4], S: 45, span: 12.4, cl0: .05, k: 3.6, clmax: 1.45, cd0: .026, ki: .12, mdd: [.86, .045],
+    flaps: [{ deg: 0, cl: 0, cd: 0, da: 0, lab: 'UP' }, { deg: 25, cl: .45, cd: .07, da: .02, lab: 'DN', vfe: 230 }],
+    eng: { jet: true, Tmil: 82000, Tab: 128000, Ts: 82000, idle: 62, gov: 100 },
+    tail: false, noseZ: -7.0, mainL: [-1.3, -2.0, 1.5], wheelR: .42, defl: [.3, .28], zeta: [.7, .7], toFlaps: 1, toV: 66,
+    steer: 35, steerV: 10, muLat: [.7, .6], muRoll: .03, muBrake: .45, sink: 7.2, prop: null, tip: [6.2, -.3, 2.9], tailSkid: [0, -1.0, 5.4], belly: [0, -1.0, -1], flapT: 4,
+    vRef: 64, kA: 6.5, kE: .4, a0: .04, roll: 5.2, rollD: 2.0, rollQ: 11, yaw: 1.0, advY: .05, slip: 0, pfac: 0, gyro: 0, trimRange: .7, gMax: 9, atHi: 4.6,
+    retract: true, gearT: 3, vle: 300, hook: { p: [0, -1.05, 4.0], L: 1.55, down: 40 }, onSpeed: 15, lso: 'Brick',
+    eye: [0, .98, -6.05], fov: 70, tilt: -.2, clearR: 2, scale: 1.3,
+    placard: [['VS APPR', 100], ['ON-SPEED', 128], ['GEAR', 300], ['G', 9], ['STUDS', 'LOTS']],
+    tips: 'A toy-brick fighter built at full size: one big afterburning engine, a studded delta, a minifig pilot, and a tailhook. Throttle past 80% lights the burner. <b>G</b> for the gear, <b>H</b> for the hook. It rolls fast and pulls 9 g. Rotate at about 130 knots. At sea it goes on the catapult like the Tomcat: fly <b>15 units</b> on the indexer (about 128 knots), keep the ball centred and catch a wire.',
+    to: 'Flaps down · full power, burner if you like · rotate at about 130 knots', stall: 'aoa', reg: 'BRICK 1'
   }
 };
 // derived gear geometry: for taildraggers the tailwheel height comes from the three-point attitude
@@ -1577,7 +1594,125 @@ function buildModelF14(t) {
   root.traverse(o => { if (o.isMesh && !o.material.transparent) o.castShadow = true; });
   models[t.id] = { root, surf };
 }
-for (const t of Object.values(TYPES)) (t.id === 'c180' ? buildModel180 : t.id === 'c130' ? buildModel130 : t.id === 'f14' ? buildModelF14 : buildModel)(t);
+/* ---------- exterior model: the Brick Jet, a toy-brick fighter blown up to full size ---------- */
+// Built on a stud grid like the real set: 1 stud = .55 m, plates a third of a brick. Glossy ABS colours: dark and light
+// bluish grey, black, dark turquoise strakes printed with pink lightning bolts, bright pink tailplanes, smoked canopy
+const BRK = { DBG: 0x6c6e68, LBG: 0xa0a5a9, BLK: 0x1b1b1d, TEAL: 0x2fbfb0, PINK: 0xe85bc3, YEL: 0xf2cd37, STUD: .55 };
+const brkMats = {};
+const brkMat = (c, o) => brkMats[c] || (brkMats[c] = new THREE.MeshPhongMaterial(Object.assign({ color: c, shininess: 70, specular: 0x3a3a3a }, o || {})));
+// a block that tapers from one rectangle (z0: half-width w0, from y b0 up to t0) to another at z1
+function brkTaper(z0, w0, b0, t0, z1, w1, b1, t1, c, p, mat) {
+  const v = [[-w0, b0, z0], [w0, b0, z0], [w0, t0, z0], [-w0, t0, z0], [-w1, b1, z1], [w1, b1, z1], [w1, t1, z1], [-w1, t1, z1]];
+  const f = [[0, 2, 1], [0, 3, 2], [4, 5, 6], [4, 6, 7], [0, 1, 5], [0, 5, 4], [3, 7, 6], [3, 6, 2], [0, 4, 7], [0, 7, 3], [1, 2, 6], [1, 6, 5]];
+  const pos = []; for (const t of f) for (const i of t) pos.push(...v[i]);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals();
+  const m = new THREE.Mesh(g, mat || brkMat(c)); m.castShadow = true; p.add(m); return m;
+}
+function brkBox(x0, x1, y0, y1, z0, z1, c, p, mat) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), mat || brkMat(c)); m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.castShadow = true; p.add(m); return m;
+}
+// a flat plate cut to a polygon (x, z pairs), from y0 to y1
+function brkPlate(pts, y0, y1, c, p, mat) {
+  const sh = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, z)));
+  const g = new THREE.ExtrudeGeometry(sh, { depth: y1 - y0, bevelEnabled: false }).rotateX(Math.PI / 2).translate(0, y1, 0);
+  const m = new THREE.Mesh(g, mat || brkMat(c)); m.castShadow = true; m.receiveShadow = true; p.add(m); return m;
+}
+// studs: one instanced cylinder per colour
+function brkStuds(pts, y, c, p) {
+  const g = new THREE.CylinderGeometry(.165, .165, .1, 14).translate(0, .05, 0), m = new THREE.InstancedMesh(g, brkMat(c), pts.length), o = new THREE.Object3D();
+  pts.forEach(([x, z], i) => { o.position.set(x, y, z); o.updateMatrix(); m.setMatrixAt(i, o.matrix); });
+  m.castShadow = true; p.add(m); return m;
+}
+const inTri = (x, z, a, b, c) => { const s = (p, q, r) => (p[0] - r[0]) * (q[1] - r[1]) - (q[0] - r[0]) * (p[1] - r[1]); const d1 = s([x, z], a, b), d2 = s([x, z], b, c), d3 = s([x, z], c, a); return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0)); };
+function buildModelBrick(t) {
+  const root = new THREE.Group(), surf = {}; root.visible = false; plane.add(root);
+  const S = BRK.STUD, glassM = new THREE.MeshPhongMaterial({ color: 0x1a2027, transparent: true, opacity: .62, shininess: 120, specular: 0x8899aa, depthWrite: false });
+  // printed tiles: dark turquoise with pink and maroon lightning bolts; the fins' black panels with the white wolf emblem
+  const boltTex = canvasTex(512, 64, (g, w, h) => { g.fillStyle = '#2fbfb0'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 8; i++) { const x = i * 64 + 18; for (const [c, dx] of [['#e85bc3', 0], ['#5a2132', 7]]) { g.fillStyle = c; g.beginPath(); g.moveTo(x + dx, 10); g.lineTo(x + dx + 16, 10); g.lineTo(x + dx + 9, 30); g.lineTo(x + dx + 20, 30); g.lineTo(x + dx - 2, 56); g.lineTo(x + dx + 4, 36); g.lineTo(x + dx - 6, 36); g.closePath(); g.fill(); } } });
+  const finTex = canvasTex(128, 256, (g, w, h) => { g.fillStyle = '#1b1b1d'; g.fillRect(0, 0, w, h); g.strokeStyle = '#f2f2ee'; g.lineWidth = 7; g.lineJoin = 'round';
+    g.beginPath(); g.moveTo(30, 70); g.lineTo(44, 100); g.lineTo(64, 92); g.lineTo(84, 100); g.lineTo(98, 70); g.lineTo(96, 120); g.lineTo(64, 160); g.lineTo(32, 120); g.closePath(); g.stroke();
+    g.beginPath(); g.moveTo(48, 118); g.lineTo(60, 124); g.moveTo(80, 118); g.lineTo(68, 124); g.moveTo(54, 140); g.lineTo(64, 148); g.lineTo(74, 140); g.stroke(); });
+  const boltM = new THREE.MeshPhongMaterial({ map: boltTex, shininess: 70, specular: 0x3a3a3a });
+  // fuselage: dark grey box, the black nose wedge stepping down to a point, the pink plate layer along the sides
+  brkBox(-1.1, 1.1, -1.0, .3, -7.7, 5.0, BRK.DBG, root);
+  brkTaper(-7.7, 1.1, -1.0, .3, -9.0, .72, -.85, -.12, BRK.BLK, root);
+  brkTaper(-9.0, .72, -.85, -.12, -10.4, .2, -.7, -.42, BRK.BLK, root);
+  bar([0, -.56, -10.4], [0, -.56, -10.9], .05, BRK.BLK, root, 8);
+  for (const s of [-1, 1]) brkBox(s > 0 ? 1.1 : -1.5, s > 0 ? 1.5 : -1.1, -.42, -.2, -5.6, 5.0, BRK.PINK, root);
+  // smoked canopy with the minifig pilot, the light grey canopy-top brick with its two studs behind it
+  brkTaper(-7.65, .5, .3, .4, -6.2, 1.0, .3, 1.22, 0, root, glassM);
+  brkTaper(-6.2, 1.0, .3, 1.22, -4.1, 1.0, .3, 1.28, 0, root, glassM);
+  for (const m of root.children.slice(-2)) { m.castShadow = false; outside.push(m); }
+  brkTaper(-4.1, 1.05, .3, 1.32, -2.7, 1.1, .3, 1.0, BRK.LBG, root);
+  outside.push(brkStuds([[-.28, -3.75], [.28, -3.75]], 1.3, BRK.LBG, root));
+  { const c = new THREE.Group(); c.name = 'crew'; root.add(c);
+    const head = new THREE.Mesh(new THREE.CylinderGeometry(.17, .17, .26, 16), brkMat(BRK.YEL)); head.position.set(0, .98, -6.05); c.add(head);
+    const helm = new THREE.Mesh(new THREE.SphereGeometry(.21, 16, 10, 0, Math.PI * 2, 0, Math.PI * .55), brkMat(0x2a2a2c)); helm.position.set(0, 1.0, -6.0); c.add(helm);
+    brkBox(-.3, .3, .3, .85, -6.0, -5.6, 0x3d3f42, c); c.traverse(o => { if (o.isMesh) outside.push(o); }); }
+  // spine: grey rails either side of a black channel, then the stepped curved slopes of the hump to the tail
+  for (const s of [-1, 1]) brkBox(s > 0 ? .42 : -1.1, s > 0 ? 1.1 : -.42, .3, .76, -2.7, 1.0, BRK.LBG, root);
+  brkBox(-.42, .42, .3, .5, -2.7, 1.0, BRK.BLK, root);
+  brkTaper(1.0, 1.1, .3, .76, 2.1, 1.1, .3, 1.02, BRK.DBG, root);
+  brkTaper(2.1, 1.1, .3, 1.02, 3.3, 1.05, .3, 1.1, BRK.LBG, root);
+  brkTaper(3.3, 1.05, .3, 1.1, 4.5, 1.0, .3, .86, BRK.DBG, root);
+  brkTaper(4.5, 1.0, .3, .86, 5.0, .9, .3, .5, BRK.LBG, root);
+  // exhaust: a dark grey round brick with a black throat, and the afterburner flame
+  { const n = new THREE.Mesh(new THREE.CylinderGeometry(.62, .7, .6, 20).rotateX(Math.PI / 2), brkMat(BRK.DBG)); n.position.set(0, -.35, 5.3); root.add(n);
+    const th = new THREE.Mesh(new THREE.CircleGeometry(.48, 20), brkMat(0x0c0c0c)); th.position.set(0, -.35, 5.61); root.add(th);
+    const ab = new THREE.Group(); ab.position.set(0, -.35, 5.62); ab.visible = false; root.add(ab); surf.ab = ab;
+    ab.add(new THREE.Mesh(new THREE.ConeGeometry(.5, 1, 18, 1, true).rotateX(-Math.PI / 2).translate(0, 0, .5), new THREE.MeshBasicMaterial({ color: 0xff8a3a, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })));
+    ab.add(new THREE.Mesh(new THREE.ConeGeometry(.32, .7, 14, 1, true).rotateX(-Math.PI / 2).translate(0, 0, .35), new THREE.MeshBasicMaterial({ color: 0xbfd8ff, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }))); }
+  // teal strakes along the fuselage sides, printed on top and outside, with a sloped nose
+  for (const s of [-1, 1]) {
+    const x0 = s > 0 ? 1.1 : -1.65, x1 = s > 0 ? 1.65 : -1.1;
+    brkBox(x0, x1, -.2, .5, -4.6, 5.0, BRK.TEAL, root);
+    const top = new THREE.Mesh(new THREE.PlaneGeometry(9.6, .55).rotateX(-Math.PI / 2).rotateY(Math.PI / 2), boltM); top.position.set(s * 1.375, .505, .2); root.add(top);
+    const sd = new THREE.Mesh(new THREE.PlaneGeometry(9.6, .7).rotateY(s * Math.PI / 2), boltM); sd.position.set(s * 1.655, .15, .2); root.add(sd);
+    brkTaper(-5.4, .275, -.2, -.2, -4.6, .275, -.2, .5, BRK.TEAL, root).position.x = s * 1.375;
+  }
+  // wings: one big black wedge plate a side, studs on top; it runs under the fuselage
+  const wy0 = -.42, wy1 = -.2, A = [1.1, -2.6], B = [1.1, 2.9], C = [6.2, 2.9];
+  for (const s of [-1, 1]) {
+    brkPlate([[s * .5, -2.6], [s * A[0], A[1]], [s * C[0], C[1]], [s * .5, 2.9]].map(([x, z]) => [x, z]), wy0, wy1, BRK.BLK, root);
+    const pts = []; for (let i = 0; i < 12; i++) for (let j = 0; j < 12; j++) { const x = 1.65 + S / 2 + i * S, z = -2.6 + S / 2 + j * S; if (inTri(x, z, A, B, C) && inTri(x - .2, z + .2, A, B, C) && x < 6.0 && z < 2.7) pts.push([s * x, z]); }
+    brkStuds(pts, wy1, BRK.BLK, root);
+  }
+  // pink tailplanes, all-moving about one hinge
+  surf.elev = pivot(0, -.1, 4.6, root);
+  for (const s of [-1, 1]) { const m = brkPlate([[s * 1.6, -.9], [s * 4.8, .9], [s * 4.8, 1.8], [s * 1.6, .7]], -.11, .11, BRK.PINK, surf.elev); m.position.y = .1; }
+  // twin fins canted out, black panels framed in teal on the leading edge and top, the wolf emblem on each side
+  surf.ruds = [];
+  for (const s of [-1, 1]) {
+    const f = pivot(s * 1.38, .5, 0, root); f.rotation.z = -s * .2;
+    const sh = new THREE.Shape([new THREE.Vector2(2.9, 0), new THREE.Vector2(4.9, 0), new THREE.Vector2(5.2, 2.6), new THREE.Vector2(3.55, 2.6)]);
+    const g = new THREE.ExtrudeGeometry(sh, { depth: .07, bevelEnabled: false }).translate(0, 0, -.035).rotateY(-Math.PI / 2);
+    const uv = g.attributes.uv, pos = g.attributes.position; for (let i = 0; i < uv.count; i++) uv.setXY(i, (pos.getZ(i) - 2.9) / 2.3, pos.getY(i) / 2.6);
+    const m = new THREE.Mesh(g, new THREE.MeshPhongMaterial({ map: finTex, shininess: 70, specular: 0x3a3a3a })); m.castShadow = true; f.add(m);
+    bar([0, 0, 2.9], [0, 2.62, 3.55], .1, BRK.TEAL, f, 6); bar([0, 2.62, 3.5], [0, 2.62, 5.25], .1, BRK.TEAL, f, 6);
+  }
+  // gear: toy wheels, black tyres on light grey hubs, on dark grey legs that fold up
+  surf.gear = [];
+  const tyre = (x, y, z, r, w, p) => { const tr = new THREE.Mesh(new THREE.CylinderGeometry(r, r, w, 20).rotateZ(Math.PI / 2), brkMat(0x151515)); tr.position.set(x, y, z); p.add(tr);
+    const hb = new THREE.Mesh(new THREE.CylinderGeometry(r * .55, r * .55, w + .02, 16).rotateZ(Math.PI / 2), brkMat(BRK.LBG)); hb.position.set(x, y, z); p.add(hb); };
+  const [mx, my, mz] = t.mainL;
+  for (const s of [-1, 1]) { const G0 = pivot(s * -mx, -.95, mz - .3, root); surf.gear.push({ g: G0, nose: false });
+    brkBox(-.09, .09, my + t.wheelR + .95, 0, -.1, .1, BRK.DBG, G0); tyre(s * .12, my + t.wheelR + .95, .3, t.wheelR, .32, G0); }
+  { const G0 = pivot(0, -.95, t.noseZ - .25, root); surf.gear.push({ g: G0, nose: true });
+    brkBox(-.07, .07, my + .3 + .95, 0, -.08, .08, BRK.DBG, G0); tyre(0, my + .3 + .95, .25, .3, .26, G0); }
+  // hook: a light grey bar with a black tip
+  { const Hk = pivot(...t.hook.p, root); surf.hook = Hk; bar([0, 0, 0], [0, 0, t.hook.L], .06, BRK.LBG, Hk, 8); brkBox(-.1, .1, -.12, .04, t.hook.L - .1, t.hook.L + .15, BRK.BLK, Hk); }
+  surf.anim = dt => {
+    for (const gr of surf.gear) { const k = 1 - ac.gearPos; gr.g.rotation.x = k * (gr.nose ? -1.7 : 1.7); gr.g.visible = ac.gearPos > .03; }
+    let ha = ac.hookPos * t.hook.down * D2R;
+    if (ha > 0) { _eu.setFromQuaternion(ac.q, 'YXZ'); _tmp.set(...t.hook.p).applyQuaternion(ac.q).add(ac.pos); const gh = groundHeight(_tmp.x, _tmp.z), k = (_tmp.y - gh - .05) / t.hook.L; if (k < Math.sin(ha + _eu.x)) ha = Math.max(0, Math.asin(clamp(k, -1, 1)) - _eu.x); }
+    surf.hook.rotation.x = ha;
+    surf.elev.rotation.x = -inp.elev * .3 - ac.trim * .2;
+    const ab = ac.ab || 0; surf.ab.visible = ab > .03 && !ac.crashed; if (surf.ab.visible) { const fl = .9 + .1 * Math.sin(simT * 47); surf.ab.scale.set(.85 + .2 * ab, .85 + .2 * ab, (2.2 + 2.6 * ab) * fl); }
+  };
+  models[t.id] = { root, surf };
+}
+for (const t of Object.values(TYPES)) (t.id === 'c180' ? buildModel180 : t.id === 'c130' ? buildModel130 : t.id === 'f14' ? buildModelF14 : t.id === 'brick' ? buildModelBrick : buildModel)(t);
 
 /* ---------- cockpits ---------- */
 // Each cabin is its own scene drawn after the world with the depth buffer cleared (near plane 2 cm), so nothing a hand's
@@ -1982,6 +2117,50 @@ function cabinF14() {
   return { p, C };
 }
 cabins.f14 = cabinF14();
+// the Brick Jet's cockpit: a dark grey brick tub with studs on the consoles, a black glareshield plate studded along the
+// top, printed-tile instruments, the same HUD and indexer as the Tomcat, a joystick, throttle, gear and hook levers
+function cabinBrick() {
+  const p = new THREE.Group(), C = {}, DBG = 0x6c6e68, LBG = 0xa0a5a9, BLK = 0x1b1b1d;
+  const studs = (pts, y, c) => { for (const [x, z] of pts) { const m = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, .018, 12), cmat(c)); m.position.set(x, y + .009, z); p.add(m); } };
+  for (const s of [-1, 1]) {
+    cbox(.06, .6, 3.4, DBG, s * .52, .2, -5.3, p);
+    cbox(.24, .34, 1.4, LBG, s * .37, .24, -6.0, p);
+    const pts = []; for (let i = 0; i < 2; i++) for (let j = 0; j < 7; j++) pts.push([s * (.31 + i * .1), -6.6 + j * .1]); studs(pts, .41, LBG);
+    cbox(.14, .03, 3.4, 0x2fbfb0, s * .48, .5, -5.3, p);
+  }
+  cbox(.9, .04, 3.4, 0x3a3c3e, 0, -.06, -5.4, p);
+  cbox(.92, .48, .05, DBG, 0, .47, -6.82, p);
+  C.panel = mkPanel(.86, .42, 0, .47, -6.792, p, 0, 1100);
+  cbox(.96, .03, .32, BLK, 0, .712, -6.94, p);
+  { const pts = []; for (let i = 0; i < 9; i++) for (let j = 0; j < 2; j++) if (Math.abs(-.4 + i * .1) > .12) pts.push([-.4 + i * .1, -7.0 + j * .1]); studs(pts, .727, BLK); }
+  for (const s of [-1, 1]) cquad([s * .43, .7, -6.8], [s * .5, .7, -6.6], [s * .5, .26, -6.6], [s * .43, .26, -6.8], DBG, p);
+  cquad([-.43, .26, -6.8], [.43, .26, -6.8], [.3, .02, -6.35], [-.3, .02, -6.35], 0x2a2c2e, p);
+  cbox(.2, .05, .22, 0x161718, 0, .75, -6.9, p);
+  for (const s of [-1, 1]) cbar([s * .108, .775, -6.76], [s * .108, 1.06, -6.69], .007, 0x161718, p, 5);
+  { const m = new THREE.Mesh(new THREE.PlaneGeometry(.215, .25), new THREE.MeshBasicMaterial({ color: 0x9fe0b8, transparent: true, opacity: .07, depthWrite: false, fog: false })); m.position.set(0, .93, -6.715); m.rotation.x = .26; p.add(m); }
+  C.hud = mkScreen(F14_HUD.w, F14_HUD.h, 512, Math.round(512 * F14_HUD.h / F14_HUD.w), F14_HUD.x, F14_HUD.y, F14_HUD.z, p);
+  Object.assign(C.hud.m.material, { transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false }); C.hud.m.renderOrder = 10;
+  cbox(.045, .085, .03, 0x151617, -.2, .8, -6.8, p);
+  C.aoa = mkScreen(.032, .07, 48, 104, -.2, .8, -6.784, p);
+  // the canopy sill and the light grey canopy-top brick behind your head
+  for (const s of [-1, 1]) cbox(.05, .05, 3.6, DBG, s * .5, .53, -5.6, p);
+  cbox(1.0, .5, .3, LBG, 0, 1.05, -3.9, p);
+  // joystick with a red button, a toy-brick throttle lever, gear and hook levers
+  C.stick = new THREE.Group(); C.stick.position.set(0, .14, -6.2); p.add(C.stick);
+  cbar([0, 0, 0], [0, .38, -.02], .016, 0x2a2b2c, C.stick, 8); cbox(.05, .12, .05, BLK, 0, .43, -.03, C.stick); cbox(.03, .02, .02, 0xd01012, 0, .5, -.04, C.stick);
+  cbox(.12, .05, .12, BLK, 0, .14, -6.2, p);
+  C.thr = [];
+  { const L = new THREE.Group(); L.position.set(-.37, .41, -6.0); p.add(L); cbar([0, 0, 0], [0, .1, -.02], .012, LBG, L, 6); cbox(.06, .05, .08, 0xe85bc3, 0, .12, -.03, L); C.thr.push(L); }
+  cbox(.06, .03, .2, BLK, -.37, .405, -6.0, p);
+  C.gear = new THREE.Group(); C.gear.position.set(-.455, .6, -6.74); p.add(C.gear);
+  cbar([0, 0, 0], [0, -.09, .06], .008, LBG, C.gear, 5); { const w = new THREE.Mesh(new THREE.TorusGeometry(.022, .009, 6, 14), cmat(0xf2cd37)); w.position.set(0, -.1, .065); w.rotation.y = Math.PI / 2; C.gear.add(w); }
+  C.hookH = new THREE.Group(); C.hookH.position.set(.455, .6, -6.74); p.add(C.hookH);
+  cbar([0, 0, 0], [0, -.09, .06], .008, LBG, C.hookH, 5); cbox(.014, .035, .03, BLK, 0, -.1, .07, C.hookH);
+  // a minifig-sized seat: one 2x2 brick and a backrest plate
+  cbox(.5, .12, .5, BLK, 0, .2, -5.82, p); cbox(.5, .72, .1, BLK, 0, .58, -5.55, p);
+  return { p, C };
+}
+cabins.brick = cabinBrick();
 // F-14 gauge faces
 const asiJAngle = v => v < 100 ? -2.6 + v / 100 * .9 : -1.7 + Math.log(Math.min(v, 850) / 100) / Math.log(8) * 4.1;
 function asiJFace(g, cx, cy, r) {
@@ -2090,7 +2269,8 @@ const ASI = {
   j3: { unit: 'MPH', lo: 40, max: 140, step: 20, green: [38, 100], red: 122 },
   c180: { unit: 'KNOTS', lo: 40, max: 200, step: 20, white: [48, 87], green: [56, 143], red: 171 },
   c130: { unit: 'KNOTS', lo: 60, max: 360, step: 40, red: 320 },
-  f14: { unit: 'KNOTS', lo: 60, max: 800, step: 100, red: 800 }
+  f14: { unit: 'KNOTS', lo: 60, max: 800, step: 100, red: 800 },
+  brick: { unit: 'KNOTS', lo: 60, max: 800, step: 100, red: 800 }
 };
 const TACH = { j3: { max: 3000, green: [1600, 2300], red: 2300, ccw: true }, c180: { max: 3500, green: [2000, 2400], red: 2400, ccw: false } };
 const LAYOUT = {
@@ -2113,11 +2293,15 @@ const LAYOUT = {
     ['vdi', 0, .565], ['hsd', 0, .345],
     ['n2', .175, .615, .03], ['n2', .265, .615, .03], ['tit14', .175, .535, .03], ['tit14', .265, .535, .03], ['ff14', .175, .455, .03], ['ff14', .265, .455, .03], ['noz', .175, .375, .03], ['noz', .265, .375, .03],
     ['gmeter', .365, .6, .029], ['sweep', .365, .49, .029], ['fuelJ', .365, .38, .029]] },
+  // the Brick Jet: printed 2x2 round tiles in two rows, flight on the left, engine and g on the right
+  brick: { R: .04, items: [['aoaU', -.3, .6], ['asiJ', -.2, .6], ['ai', -.1, .6], ['alt', -.3, .4], ['vsi', -.2, .4], ['gearInd', -.09, .41],
+    ['n2', .1, .6], ['tit14', .2, .6], ['gmeter', .3, .6], ['ff14', .1, .4], ['fuelJ', .2, .4], ['clock', .3, .4, .03]] },
 };
 function drawStatic(id) {
   const P = cabins[id].C.panel, g = P.bgg, W = P.bg.width, Hh = P.bg.height, L = LAYOUT[id];
-  const base = '#1b1b1a';
+  const base = id === 'brick' ? '#6c6e68' : '#1b1b1a';
   g.fillStyle = base; g.fillRect(0, 0, W, Hh);
+  if (id === 'brick') for (const [, x, y] of L.items) { const cx = P.X(x), cy = P.Y(y), h = .047 * P.px; g.fillStyle = '#1b1b1d'; g.fillRect(cx - h, cy - h, 2 * h, 2 * h); g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 2; g.strokeRect(cx - h, cy - h, 2 * h, 2 * h); }
   // a little paint texture and wear
   for (let i = 0; i < 1600; i++) { g.fillStyle = `rgba(${rnd() < .5 ? '255,255,255' : '0,0,0'},${.02 + rnd() * .03})`; g.fillRect(rnd() * W, rnd() * Hh, 1 + rnd() * 3, 1 + rnd() * 3); }
   screwHeads(g, W, Hh, 10);
@@ -2745,7 +2929,7 @@ function lsoCalls(dt) {
   const dev = (Math.atan2(e.y - LENS.y, LENS.u - u) - GS) * R2D, units = ac.alpha * R2D * 1.41;
   if (!lsoPass) lsoPass = { ball: false, t: 0 };
   lsoT -= dt;
-  if (!lsoPass.ball && u > -1450) { lsoPass.ball = true; lsoPass.t = 1.4; toast('Tomcat, ¾ mile, call the ball · “Tomcat ball, 4.2” · Paddles: Roger ball, 27 knots axial', 3200); lsoT = 3.4; return; }
+  if (!lsoPass.ball && u > -1450) { lsoPass.ball = true; lsoPass.t = 1.4; { const cs = T.lso || 'Tomcat'; toast(`${cs}, ¾ mile, call the ball · “${cs} ball, 4.2” · Paddles: Roger ball, 27 knots axial`, 3200); } lsoT = 3.4; return; }
   const close = u > -520, waveoff = close && (dev < -.8 || Math.abs(v) > 14 || ac.gearPos < .99 || !ac.hook) || (u > -60 && dev < -.55);
   if (waveoff) { wavingOff = true; if (lsoT <= 0) { toast('Wave off! Wave off! · full power, climb straight ahead', 1900); lsoT = 2; } return; }
   if (lsoT > 0 || u < -1450) return;
@@ -2844,8 +3028,8 @@ function updateCockpit(dt) {
     for (const y of [C.yoke, C.yoke2]) { y.rotation.z = -inp.ail * .7; y.position.z = -11.4 + inp.elev * .1; }
     C.flap.rotation.x = .35 - ac.flaps * .35; C.gear.rotation.x = ac.gear ? .5 : -.3;
   }
-  if (T.id === 'f14') {
-    for (const L of C.thr) L.position.z = -5.94 - ac.thr * .2;
+  if (T.id === 'f14' || T.id === 'brick') {
+    for (const L of C.thr) L.position.z = (T.id === 'f14' ? -5.94 : -6.0) - ac.thr * .2;
     C.gear.rotation.x = ac.gear ? .5 : -.2; C.hookH.rotation.x = ac.hook ? .5 : -.2;
   }
   if (T.id === 'c180') { C.thr.position.z = -.7 - ac.thr * .07; C.yoke.rotation.z = -inp.ail * .8; C.yoke.position.z = -.62 + inp.elev * .08; C.trim.rotation.x = ac.trim * 20; C.flap.rotation.x = -T.flaps[ac.flaps].deg * D2R * 1.4; }
@@ -2984,6 +3168,7 @@ function step(dt) {
   const hw = Math.max(.3, agl + .8), ge = (16 * hw / t.span) ** 2, phi = ge / (1 + ge);
   let cd = t.cd0 + t.ki * phi * cl * cl + fl.cd + (stalled ? .1 : 0);
   if (t.retract) cd += (t.gearCd || .02) * ac.gearPos;
+  if (t.mdd) cd += t.mdd[1] * sstep(t.mdd[0], t.mdd[0] + .2, mach);
   if (t.sweep) { const sf = (ac.sweep - 20) / 48, mc = .74 + .1 * sf; cd += .035 * sstep(mc, 1.05, mach) * (1 - .25 * sstep(1.2, 2, mach)) * (1.3 - .5 * sf); }
   _F.set(0, 0, 0);
   if (V > .5) {
@@ -3228,7 +3413,7 @@ function resetRunway() {
   ac.thr = 0; ac.flaps = ac.flapPos = T.toFlaps || 0;
   ac.trim = solveTrim(T.toV || T.vRef * .78, ac.flaps, 0).trim; ac.onGround = true; ac.rpm = T.eng.idle; ac.runT = 0;
 }
-const APPR = { j3: { v: 25.5, fl: 0 }, c180: { v: 36, fl: 2 }, c130: { v: 53, fl: 2 }, f14: { v: 66.9, fl: 1, gp: 3.5, d: 2300, aim: 140 } };   // the jet aims long and a little steeper, over the trees at the end of the strip
+const APPR = { j3: { v: 25.5, fl: 0 }, c180: { v: 36, fl: 2 }, c130: { v: 53, fl: 2 }, f14: { v: 66.9, fl: 1, gp: 3.5, d: 2300, aim: 140 }, brick: { v: 65.8, fl: 1, gp: 3.5, d: 2300, aim: 140 } };   // the jet aims long and a little steeper, over the trees at the end of the strip
 // at sea: the Tomcat starts a mile behind the ship on the 3.5° glideslope down the angled deck, hook down, with the
 // 27 knots over the deck already in its speed; hookless types fly a slower, shorter final down the straight deck
 function resetSea() {
@@ -3644,7 +3829,7 @@ wxSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => 
 applyWeather(settings.wx); syncWx();
 const locSeg = $('locSeg');
 const LOC_TXT = { earth: [$('mEyebrow').textContent, $('mSub').innerHTML],
-  sea: ['USS THEODORE ROOSEVELT · CVN-71 · GULF OF MEXICO', 'Nimitz-class carrier 80 nm south of Galveston: <b>1,092 ft</b> flight deck, landing area angled <b>9°</b>, four wires, <b>27 kt</b> over the deck. Catch a wire in the Tomcat, or take anything else off the bow. Paddles is on the radio.'] };
+  sea: ['USS THEODORE ROOSEVELT · CVN-71 · GULF OF MEXICO', 'Nimitz-class carrier 80 nm south of Galveston: <b>1,092 ft</b> flight deck, landing area angled <b>9°</b>, four wires, <b>27 kt</b> over the deck. Catch a wire in the Tomcat or the Brick Jet, or take anything else off the bow. Paddles is on the radio.'] };
 function syncLoc() {
   locSeg.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.l === settings.loc))); document.body.classList.toggle('moon', onMoon); document.body.classList.toggle('sea', atSea);
   const L = LOC_TXT[atSea ? 'sea' : 'earth']; $('mEyebrow').textContent = L[0]; $('mSub').innerHTML = L[1]; syncRunwayLabels();
