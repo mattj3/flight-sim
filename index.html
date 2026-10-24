@@ -135,7 +135,7 @@ body.gear .col.xcol,body.jato .col.xcol,body.rev .col.xcol{display:flex!importan
 body.kids .cell.kids-only{display:flex!important}
 body.guns .btn.guns-only{display:block!important}
 /* the fire button: big, round and red so it's easy to find with a thumb and can't be mistaken for its neighbours */
-#bGun{width:78px;height:78px;min-width:0;padding:0;margin-left:6px;border-radius:50%;border:3px solid #ffd3c9;background:radial-gradient(circle at 38% 32%,#ff7a62,#d8261a 62%,#8e130c);color:#fff;font:800 15px/1 var(--f-ui);letter-spacing:.1em;text-shadow:0 1px 2px rgba(0,0,0,.6);box-shadow:0 0 0 4px rgba(216,38,26,.35),0 4px 12px rgba(0,0,0,.5)}
+#bGun{width:78px;height:78px;min-width:0;padding:0;margin-right:4px;align-self:flex-end;border-radius:50%;border:3px solid #ffd3c9;background:radial-gradient(circle at 38% 32%,#ff7a62,#d8261a 62%,#8e130c);color:#fff;font:800 15px/1 var(--f-ui);letter-spacing:.1em;text-shadow:0 1px 2px rgba(0,0,0,.6);box-shadow:0 0 0 4px rgba(216,38,26,.35),0 4px 12px rgba(0,0,0,.5)}
 #bGun.on{transform:scale(.93);background:radial-gradient(circle at 50% 50%,#ffb04a,#ff4a1a 55%,#a3160d);box-shadow:0 0 0 6px rgba(255,140,40,.55),0 0 22px rgba(255,120,30,.8)}
 body.guns .cell.guns-only{display:flex!important}
 body.guns #hint .guns-only{display:inline!important}
@@ -193,6 +193,7 @@ body:not(.touch) .touch-help{display:none}
   <button class="btn" id="rudR" type="button" aria-label="Right rudder">RUDDER ►</button>
 </div>
 <div id="left" class="touch-only">
+  <button class="btn guns-only" id="bGun" type="button" aria-label="Fire the guns">FIRE</button>
   <div id="thr" aria-label="Throttle"><div id="thrFill"></div><div id="thrLb">THROTTLE</div><div id="thrKnob">0</div></div>
   <div class="col">
     <button class="btn" id="flapUp" type="button">FLAP ▲</button>
@@ -205,7 +206,6 @@ body:not(.touch) .touch-help{display:none}
     <button class="btn rev-only" id="bRev" type="button">REV</button>
     <button class="btn jato-only" id="bJato" type="button">JATO</button>
   </div>
-  <button class="btn guns-only" id="bGun" type="button" aria-label="Fire the guns">FIRE</button>
 </div>
 <div id="right" class="touch-only">
   <div class="col" id="trimCol">
