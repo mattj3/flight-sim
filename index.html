@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="R-Law Fly-In">
-<meta name="description" content="Fly a Piper J-3 Cub into a grass-strip fly-in in the East Texas piney woods. Works with keyboard, gamepad or touch.">
+<meta name="description" content="Fly a Cub, a Skywagon, a Hercules or an F-14 Tomcat: a grass-strip fly-in in the East Texas piney woods, a carrier in the Gulf, or the Moon. Works with keyboard, gamepad or touch.">
 <title>R-Law Fly-In</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -122,7 +122,12 @@ body.autotrim #trimCol{display:none!important}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .seg button{font:10px/1 var(--f-ui);letter-spacing:.08em;height:32px;padding:0 11px;background:transparent;color:var(--muted);border:0;border-left:1px solid var(--line);cursor:pointer}
 .seg button:first-child{border-left:0}
-body.moon .earth-only{display:none}
+body.moon .earth-only,body.sea .land-only{display:none}
+.jet-only{display:none!important}
+body.jet .cell.jet-only,body.jet .col.jet-only{display:flex!important}
+body.jet #hint .jet-only{display:inline!important}
+body.ab #thrFill{background:linear-gradient(to top,rgba(255,120,40,.6),rgba(255,160,60,.15))}
+#locSeg button{padding:0 9px}
 .seg.wx{display:grid;grid-template-columns:repeat(3,auto)}
 .seg.wx button:nth-child(4){border-left:0}
 .seg.wx button:nth-child(n+4){border-top:1px solid var(--line)}
@@ -149,7 +154,8 @@ body:not(.touch) .touch-help{display:none}
   <div class="cell"><span class="lb">V/S FPM</span><span class="v" id="vVs">0</span></div>
   <div class="cell"><span class="lb">HDG</span><span class="v" id="vHdg">200</span></div>
   <div class="cell"><span class="lb">FLAP</span><span class="v" id="vFlap">0</span></div>
-  <div class="cell"><span class="lb">WIND</span><span class="v" id="vWind">CALM</span></div>
+  <div class="cell"><span class="lb" id="lWind">WIND</span><span class="v" id="vWind">CALM</span></div>
+  <div class="cell jet-only"><span class="lb">AOA U</span><span class="v" id="vAoa">0</span></div>
 </div>
 
 <div id="topBtns">
@@ -159,7 +165,7 @@ body:not(.touch) .touch-help{display:none}
 
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="rotate">Turn your phone sideways for the full view</div>
-<div id="hint">W S pitch · A D roll · Q E rudder · R F throttle · [ ] trim · B brakes · C view · drag to look · Esc menu</div>
+<div id="hint">W S pitch · A D roll · Q E rudder · R F throttle · [ ] trim · B brakes · <span class="jet-only">G gear · H hook · </span>C view · drag to look · Esc menu</div>
 
 <div id="rudRow" class="touch-only">
   <button class="btn" id="rudL" type="button" aria-label="Left rudder">◄ RUDDER</button>
@@ -171,6 +177,10 @@ body:not(.touch) .touch-help{display:none}
     <button class="btn" id="flapUp" type="button">FLAP ▲</button>
     <button class="btn" id="flapDn" type="button">FLAP ▼</button>
     <button class="btn" id="brk" type="button">BRAKE</button>
+  </div>
+  <div class="col jet-only">
+    <button class="btn" id="bGear" type="button">GEAR</button>
+    <button class="btn" id="bHook" type="button">HOOK</button>
   </div>
 </div>
 <div id="right" class="touch-only">
@@ -184,9 +194,9 @@ body:not(.touch) .touch-help{display:none}
 <div id="menu">
   <div class="card" role="dialog" aria-labelledby="mTitle">
     <div>
-      <p class="eyebrow">R-LAW FIELD · TURF 02/20 · EAST TEXAS</p>
+      <p class="eyebrow" id="mEyebrow">R-LAW FIELD · TURF 02/20 · EAST TEXAS</p>
       <h1 id="mTitle">R-Law Fly-In <small>v2</small></h1>
-      <p class="sub">Turf runway <b>02/20</b> · <b>3,500 × 50 ft</b> · field elevation <b>310 ft</b> · cut through 70 ft pines. CTAF <b>122.9</b>. Take off, roam the piney woods, come back and land.</p>
+      <p class="sub" id="mSub">Turf runway <b>02/20</b> · <b>3,500 × 50 ft</b> · field elevation <b>310 ft</b> · cut through 70 ft pines. CTAF <b>122.9</b>. Take off, roam the piney woods, come back and land.</p>
     </div>
     <p class="status" id="mStatus" hidden></p>
     <div class="plcap">AIRCRAFT</div>
@@ -204,10 +214,11 @@ body:not(.touch) .touch-help{display:none}
       <span class="plcap" style="margin:0">WHERE</span>
       <div class="seg" role="radiogroup" aria-label="Location" id="locSeg">
         <button type="button" role="radio" data-l="earth" aria-checked="true">R-LAW, TEXAS</button>
+        <button type="button" role="radio" data-l="sea" aria-checked="false">CARRIER · GULF</button>
         <button type="button" role="radio" data-l="moon" aria-checked="false">THE MOON · 1/6 G</button>
       </div>
     </div>
-    <div class="row earth-only">
+    <div class="row earth-only land-only">
       <span class="plcap" style="margin:0">WIND</span>
       <div class="seg" role="radiogroup" aria-label="Wind" id="windSeg">
         <button type="button" role="radio" data-w="calm" aria-checked="false">CALM</button>
@@ -240,6 +251,7 @@ body:not(.touch) .touch-help{display:none}
       <dt>R F</dt><dd>Throttle up / down</dd>
       <dt>[ ]</dt><dd>Trim nose down / nose up, with auto trim off (menu). Auto trim holds the speed you were flying when you let go of the stick</dd>
       <dt>B · Space</dt><dd>Brakes. Hold rudder to brake one side</dd>
+      <dt>G · H</dt><dd>F-14: gear up / down, tailhook up / down. Throttle past 80% lights the afterburners</dd>
       <dt>C · drag</dt><dd>Change view · drag the view to look around the cabin</dd>
     </dl>
     <dl class="help touch-help">
@@ -247,6 +259,7 @@ body:not(.touch) .touch-help{display:none}
       <dt>Right stick</dt><dd>Pull down to raise the nose, sideways to bank</dd>
       <dt>Rudder</dt><dd>Auto rudder (menu) steers with the stick on the ground and keeps the ball centred. Turn it off for the rudder buttons; taildraggers need them the whole roll</dd>
       <dt>Auto trim</dt><dd>On by default. Let go of the stick and it holds the speed you were flying. Turn it off in the menu for the trim buttons</dd>
+      <dt>Gear · Hook</dt><dd>F-14 only. Throttle past 80% lights the afterburners</dd>
       <dt>Drag view</dt><dd>Look around the cabin</dd>
     </dl>
     <p class="fine">A fictional grass-strip fly-in in the East Texas piney woods, set on a late-October afternoon. Scenery is generated, not surveyed. Gamepads work too.</p>
@@ -283,7 +296,7 @@ const HALF = 7000, N = 350, NV = N + 1, CELL = 2 * HALF / N;                  //
 const CH_HALF = 30000, NC = 120, CC = 2 * CH_HALF / NC;                        // coarse outer terrain, 500 m cells
 const TOWN = { x: -2620, z: -2620 };                                            // R-Law is 2 nm NW of the field
 const RANCH = { u: -190, v: -150 };
-let onMoon = false;                                                              // set by the moon module
+let onMoon = false, atSea = false;                                                // set by the moon and carrier modules
 
 /* ---------- noise ---------- */
 function hash2(i, j) { let h = (Math.imul(i, 374761393) + Math.imul(j, 668265263)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; }
@@ -390,13 +403,14 @@ function triH(A, n, s, x0, x, z) {
 }
 // matches the rendered triangles exactly
 function groundHeight(x, z) {
+  if (atSea) return seaGround(x, z);
   if (x > -HALF && z > -HALF && x < HALF - .01 && z < HALF - .01) return triH(GH, N, CELL, -HALF, x, z);
   if (x > -CH_HALF && z > -CH_HALF && x < CH_HALF - .01 && z < CH_HALF - .01) return triH(GHC || HC, NC, CC, -CH_HALF, x, z);
   return FIELD;
 }
 const _gn = new V3();
 function groundNormal(x, z) { const e = 1.5; return _gn.set(groundHeight(x - e, z) - groundHeight(x + e, z), 2 * e, groundHeight(x, z - e) - groundHeight(x, z + e)).normalize(); }
-function pondAt(x, z) { if (onMoon) return null; for (const p of ponds) if (Math.abs(x - p.x) < p.r * 1.5 && Math.abs(z - p.z) < p.r * 1.5 && groundHeight(x, z) < p.level - .15) return p; return null; }
+function pondAt(x, z) { if (onMoon || atSea) return null; for (const p of ponds) if (Math.abs(x - p.x) < p.r * 1.5 && Math.abs(z - p.z) < p.r * 1.5 && groundHeight(x, z) < p.level - .15) return p; return null; }
 
 /* ---------- renderer / scene ---------- */
 const canvas = $('view');
@@ -618,7 +632,7 @@ function treeChunk(ci, cj) {
 }
 let treeCi = 1e9, treeCj = 1e9, treeR1 = 1000, treeR2 = 2000;
 function fillTrees(cx, cz, force) {
-  if (onMoon) { pines.count = hws.count = 0; treeCi = 1e9; return; }
+  if (onMoon || atSea) { pines.count = hws.count = 0; treeCi = 1e9; return; }
   const ci = Math.floor(cx / CHK), cj = Math.floor(cz / CHK);
   if (!force && ci === treeCi && cj === treeCj) return;
   treeCi = ci; treeCj = cj;
@@ -648,7 +662,7 @@ function fillTrees(cx, cz, force) {
 }
 // does a point hit a tree? crowns from half height up, trunks below
 function treeHit(x, y, z) {
-  if (onMoon) return false;
+  if (onMoon || atSea) return false;
   const ci = Math.floor(x / CHK), cj = Math.floor(z / CHK);
   for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
     const c = treeChunk(ci + di, cj + dj);
@@ -839,6 +853,23 @@ const TYPES = {
     placard: [['VSO', 86], ['VS', 99], ['VR', 95], ['VREF', 103], ['VMO', 320]],
     tips: 'Four turboprops and 132 feet of wing, flown at an assault-landing weight of 101,000 lb. Flaps start at 50%. Full power, steer with rudder (it drives the nosewheel), rotate at about 95 knots and let it climb away at 130 to 150. Approach with 100% flap at about 103 knots and plenty of power, touch down near 95, then throttle to idle and hold the brakes: the props go into reverse. Flaps no faster than 165 knots for 50% and 145 for 100%.',
     to: 'Flaps 50% · full power · rotate at 95 knots', stall: 'horn', reg: '74-1686'
+  },
+  f14: {
+    id: 'f14', name: 'Grumman F-14A Tomcat', short: 'F-14A Tomcat', blurb: '2 × TF30 · 41,800 lbf in burner · swing wing, tailhook, front seat', unit: 'kt',
+    // F-14A: 64 ft 1.5 in span at 20° of sweep and 38 ft 2.5 in at 68°, 565 sq ft, 62 ft 9 in long; two Pratt & Whitney TF30-P-414A
+    // at 12,350 lbf dry and 20,900 lbf in afterburner. Flown at 53,000 lb, a typical recovery weight (maximum trap weight 54,000 lb).
+    // The wing sweeps itself with Mach number as the CADC schedule does; lift slope, maximum lift and induced drag follow it.
+    mass: 24000, I: [2.3e5, 3.4e5, 7e4], S: 52.5, span: 19.54, cl0: .1, k: 4.4, clmax: 1.6, cd0: .021, ki: .055,
+    flaps: [{ deg: 0, cl: 0, cd: 0, da: 0, lab: 'UP' }, { deg: 35, cl: .72, cd: .09, da: .02, lab: 'DN', vfe: 225 }],
+    eng: { jet: true, Tmil: 109900, Tab: 186000, Ts: 109900, idle: 62, gov: 100 },
+    tail: false, noseZ: -6.05, mainL: [-2.5, -2.3, 1.0], wheelR: .47, defl: [.32, .26], zeta: [.7, .7], toFlaps: 1, toV: 72,
+    steer: 35, steerV: 10, muLat: [.7, .6], muRoll: .03, muBrake: .45, sink: 7.6, prop: null, tip: [9.67, .3, .93], tailSkid: [0, -.78, 7.9], belly: [0, -1.0, .5],
+    vRef: 67, kA: 6, kE: .36, a0: .05, roll: 4.5, rollD: 2.8, rollQ: 8, yaw: .9, slip: 0, pfac: 0, gyro: 0, trimRange: .7, gMax: 6.5, atHi: 4.6,
+    retract: true, hook: { p: [0, -.32, 5.6], L: 2.6, down: 40 }, sweep: true, onSpeed: 15,
+    eye: [0, .98, -6.05], fov: 70, tilt: -.2, clearR: 2.2, scale: 1.6,
+    placard: [['VS APPR', 112], ['ON-SPEED', 130], ['FLAPS', 225], ['GEAR', 280], ['MACH', '2.34']],
+    tips: 'Two TF30s, a wing that sweeps itself from 20° to 68° as you speed up, and a tailhook. Throttle past 80% lights the burners. <b>G</b> raises and lowers the gear, <b>H</b> the hook. At sea, <b>Catapult</b> puts you on the bow cat: run it up to full power and hold it, and the shot comes two seconds later. For the trap, fly <b>15 units</b> of angle of attack (the amber donut on the indexer, about 130 knots) with power, keep the meatball centred against the green datum lights and the line-up on the centreline, and do not flare. Go to full power as you touch down, in case the hook skips: then it is a bolter and you fly away. After the trap, idle and <b>H</b> to raise the hook.',
+    to: 'Flaps down · full power, burner if you like · rotate at about 140 knots', stall: 'aoa', reg: '160403'
   }
 };
 // derived gear geometry: for taildraggers the tailwheel height comes from the three-point attitude
@@ -1333,7 +1364,185 @@ function buildModel130(t) {
   NTOP = ntSave; NBOT = nbSave;
   models[t.id] = { root, surf };
 }
-for (const t of Object.values(TYPES)) (t.id === 'c180' ? buildModel180 : t.id === 'c130' ? buildModel130 : buildModel)(t);
+/* ---------- exterior model: Grumman F-14A Tomcat ---------- */
+// Proportions from the F-14A three-view: 62 ft 9 in long, 64 ft 1.5 in span at 20° and 38 ft 2.5 in at 68°, 16 ft high,
+// 16 ft 5 in main-gear track, wing pivots 8 ft 11 in either side of the centreline, nacelles 9 ft 10 in apart.
+// Low-visibility tactical paint: dark ghost grey on top, light ghost grey underneath, markings in a darker grey.
+const TC_TOP = new THREE.Color(0x6d777e), TC_BOT = new THREE.Color(0xa1a9ae), TC_T = 0x6d777e, TC_B = 0xa1a9ae, TC_INK = 0x4d555b, TC_GEAR = 0xe2e2dd;
+const tcMat = new THREE.MeshPhongMaterial({ vertexColors: true, specular: 0x202020, shininess: 16 });
+// a loft whose sections each carry their own superellipse exponents [z, hw, hh, yc, nTop, nBottom], dark above and light below
+function loft2(secs, parent, o = {}) {
+  const M = o.M || 40, pos = [], col = [], idx = [];
+  for (const [z, hw, hh, yc, nt, nb] of secs) for (let k = 0; k < M; k++) {
+    const a = k / M * Math.PI * 2, c = Math.cos(a), s = Math.sin(a), n = s > 0 ? nt : nb, y = yc + hh * Math.sign(s) * Math.pow(Math.abs(s), 2 / n);
+    pos.push(hw * Math.sign(c) * Math.pow(Math.abs(c), 2 / n), y, z);
+    const t = sstep(-.18, .18, (y - yc) / Math.max(hh, .01) + (o.split || 0)); col.push(lerp(TC_BOT.r, TC_TOP.r, t), lerp(TC_BOT.g, TC_TOP.g, t), lerp(TC_BOT.b, TC_TOP.b, t));
+  }
+  if (o.rake) for (let k = 0; k < M; k++) { const [, , hh, yc] = secs[0], y = pos[k * 3 + 1]; pos[k * 3 + 2] -= (y - yc) / hh * o.rake; }
+  for (let i = 0; i < secs.length - 1; i++) for (let k = 0; k < M; k++) { const a = i * M + k, b = i * M + (k + 1) % M, c = a + M, d = b + M; o.inside ? idx.push(a, c, b, b, c, d) : idx.push(a, b, c, b, d, c); }
+  const f = pos.length / 3; pos.push(0, secs[0][3], secs[0][0], 0, secs[secs.length - 1][3], secs[secs.length - 1][0]); col.push(...col.slice(0, 3), ...col.slice(0, 3));
+  for (let k = 0; k < M; k++) { if (o.capStart !== false) idx.push(f, (k + 1) % M, k); const e = (secs.length - 1) * M; if (o.capEnd !== false) idx.push(f + 1, e + k, e + (k + 1) % M); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
+  const m = new THREE.Mesh(g, o.mat || tcMat); m.castShadow = m.receiveShadow = !o.mat || o.mat !== pmat(GLASS); parent.add(m); return m;
+}
+// dark on the upper faces, light on the lower: for the glove, wings and stabilators
+function twoTone(g) {
+  g.computeVertexNormals(); const n = g.attributes.normal, col = new Float32Array(n.count * 3);
+  for (let i = 0; i < n.count; i++) { const t = sstep(-.35, .35, n.getY(i)); col[i * 3] = lerp(TC_BOT.r, TC_TOP.r, t); col[i * 3 + 1] = lerp(TC_BOT.g, TC_TOP.g, t); col[i * 3 + 2] = lerp(TC_BOT.b, TC_TOP.b, t); }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3)); return g;
+}
+// cross-sections shared by the exterior and the cockpit: forward fuselage, and the canopy that sits on it
+const TC_FWD = [[-7.95, .57, .52, -.12, 2.3, 2.4], [-7.3, .64, .6, -.16, 2.7, 2.5], [-6.5, .7, .66, -.2, 3.1, 2.6], [-5.5, .74, .7, -.21, 3.2, 2.6], [-4.6, .76, .7, -.21, 3.2, 2.6],
+  [-3.8, .8, .66, -.18, 3.2, 2.7], [-3.0, .86, .6, -.12, 3.3, 2.8], [-2.2, .92, .52, -.05, 3.4, 3], [-1.4, .96, .45, 0, 3.4, 3]];
+const TC_CAN = [[-7.36, .36, .02, .4, 2, 2], [-7.15, .42, .22, .4, 2.2, 2], [-6.95, .46, .45, .4, 2.3, 2], [-6.62, .5, .76, .4, 2.4, 2], [-6.0, .52, .86, .4, 2.5, 2],
+  [-5.3, .52, .88, .4, 2.5, 2], [-4.6, .51, .85, .4, 2.5, 2], [-4.0, .48, .72, .4, 2.4, 2], [-3.5, .42, .52, .4, 2.3, 2], [-3.15, .28, .28, .4, 2.1, 2], [-2.95, .1, .07, .4, 2, 2]];
+function canSec(z) { const S = TC_CAN; if (z <= S[0][0]) return S[0]; for (let i = 1; i < S.length; i++) if (z <= S[i][0]) { const a = S[i - 1], b = S[i], t = (z - a[0]) / (b[0] - a[0]); return a.map((v, k) => lerp(v, b[k], t)); } return S[S.length - 1]; }
+// a point on the canopy at station z, a = 0 at the right sill round to π at the left
+function canPt(z, a, grow = 0) { const [, hw, hh, yc, nt] = canSec(z), c = Math.cos(a), s = Math.sin(a); return [(hw + grow) * Math.sign(c) * Math.pow(Math.abs(c), 2 / nt), yc + (hh + grow) * Math.pow(Math.abs(s), 2 / nt), z]; }
+const TC_PIVOT = [2.72, .3, -.55];
+function buildModelF14(t) {
+  const root = new THREE.Group(), surf = {}; root.visible = false; plane.add(root);
+  // radome, forward fuselage, the dorsal spine behind the canopy, and the flat "pancake" centre body between the nacelles
+  loft2([[-10.55, .02, .02, -.04, 2, 2], [-10.45, .1, .095, -.045, 2, 2], [-10.2, .2, .19, -.055, 2, 2.1], [-9.8, .31, .29, -.07, 2, 2.1], [-9.3, .41, .38, -.09, 2.05, 2.2], [-8.7, .5, .46, -.105, 2.15, 2.3], [-7.95, .57, .52, -.12, 2.3, 2.4]], root);
+  loft2(TC_FWD, root);
+  loft2([[-3.7, .3, .1, .52, 2.2, 2], [-3.2, .44, .27, .48, 2.3, 2], [-2.2, .5, .3, .46, 2.4, 2], [0, .48, .28, .44, 2.4, 2], [2.5, .42, .22, .42, 2.4, 2], [4.5, .32, .14, .4, 2.3, 2], [5.9, .16, .06, .38, 2, 2]], root, { split: .5 });
+  loft2([[-3.2, .85, .4, .1, 3, 3], [-2.2, 1.5, .38, .12, 3.6, 3], [-1.4, 1.92, .36, .12, 4, 3.2], [0, 2.0, .35, .12, 4.2, 3.2], [3.0, 1.98, .34, .1, 4.2, 3.2], [4.6, 1.92, .32, .08, 4, 3.2], [5.8, 1.75, .28, .06, 3.6, 3], [6.6, 1.3, .2, .04, 3, 3]], root, { split: .35 });
+  // chin pod under the nose, and the dark anti-glare panel ahead of the windscreen
+  { const m = new THREE.Mesh(new THREE.SphereGeometry(.16, 16, 10).scale(1, .8, 3.2), pmat(0x3c4247)); m.position.set(0, -.62, -8.75); root.add(m); }
+  { const sv = [NTOP, NBOT]; NTOP = 2.8; NBOT = 2.5; band(TC_FWD.map(s => s.slice(0, 4)), -7.95, -7.28, () => .36, () => .26, 0x3a4045, root, [-1, 1], .006); [NTOP, NBOT] = sv; }
+  // nacelles: raked two-dimensional inlets under the gloves, boxy at the front, round by the nozzles
+  for (const s of [-1, 1]) {
+    const N = new THREE.Group(); N.position.x = s * 1.5; root.add(N);
+    loft2([[-3.85, .56, .64, -.36, 8, 8], [-3.0, .58, .66, -.36, 7, 7], [-1.5, .6, .67, -.35, 5, 5], [.5, .6, .66, -.33, 4, 4], [2.5, .6, .63, -.31, 3, 3], [4.5, .58, .57, -.29, 2.4, 2.4], [6.0, .55, .53, -.28, 2.1, 2.1], [6.9, .52, .5, -.27, 2, 2]], N, { rake: .34, capStart: false, split: .6 });
+    const duct = loft2([[-3.8, .5, .54, -.38, 8, 8], [-2.6, .48, .5, -.38, 6, 6], [-1.6, .42, .42, -.36, 3, 3]], N, { inside: true, capStart: false, mat: new THREE.MeshLambertMaterial({ color: 0x17191b, side: THREE.DoubleSide }) });
+    duct.geometry.attributes.position.array.forEach((v, i, A) => { if (i % 3 === 2 && i < 40 * 3) A[i] -= (A[i - 1] + .38) / .54 * .3; }); duct.geometry.attributes.position.needsUpdate = true;
+    // the inlet's splitter plate standing off the fuselage side, and the lip
+    box(.04, 1.1, 1.6, TC_B, -s * .62, -.35, -3.2, N);
+    // nozzles: TF30 shroud, the "turkey feather" petals, the dark throat, and the afterburner flame
+    const sh = new THREE.Mesh(new THREE.CylinderGeometry(.47, .51, .75, 24, 1, true).rotateX(Math.PI / 2), new THREE.MeshPhongMaterial({ color: 0x4f4c48, specular: 0x5a5a5a, shininess: 40, side: THREE.DoubleSide })); sh.position.set(0, -.27, 7.25); N.add(sh);
+    const pet = new THREE.Mesh(new THREE.CylinderGeometry(.42, .47, .45, 16, 1, true).rotateX(Math.PI / 2), new THREE.MeshPhongMaterial({ color: 0x302e2c, specular: 0x404040, shininess: 30, side: THREE.DoubleSide, flatShading: true })); pet.position.set(0, -.27, 7.85); N.add(pet); surf['noz' + s] = pet;
+    const thr = new THREE.Mesh(new THREE.CircleGeometry(.4, 20), pmat(0x0b0b0b)); thr.position.set(0, -.27, 7.55); N.add(thr);
+    const fh = new THREE.Mesh(new THREE.TorusGeometry(.2, .03, 6, 16), pmat(0x3a3836)); fh.position.set(0, -.27, 7.5); N.add(fh);
+    const ab = new THREE.Group(); ab.name = s > 0 ? 'abR' : 'abL'; ab.position.set(0, -.27, 7.9); ab.visible = false; N.add(ab);
+    const outer = new THREE.Mesh(new THREE.ConeGeometry(.4, 1, 18, 1, true).rotateX(Math.PI / 2).translate(0, 0, .5), new THREE.MeshBasicMaterial({ color: 0xff8a3a, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    const core = new THREE.Mesh(new THREE.ConeGeometry(.28, .7, 14, 1, true).rotateX(Math.PI / 2).translate(0, 0, .35), new THREE.MeshBasicMaterial({ color: 0xbfd8ff, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    ab.add(outer, core);
+    for (let k = 0; k < 3; k++) { const d = new THREE.Mesh(new THREE.SphereGeometry(.12, 10, 6).scale(1, 1, 1.8), new THREE.MeshBasicMaterial({ color: 0xfff0d0, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false })); d.position.z = .55 + k * .55; ab.add(d); }
+    surf['ab' + s] = ab;
+    // ventral fin under the back of the nacelle, canted out
+    const vf = new THREE.Mesh(tailGeo(tailShape([[5.4, 0], [6.65, 0], [6.65, -.36], [6.1, -.36]]), .05).rotateY(-Math.PI / 2), pmat(TC_B)); vf.position.set(s * .42, -.64, 0); vf.rotation.z = s * .26; N.add(vf);
+  }
+  // beaver tail between the nozzles, with the fuel-dump mast at its tip
+  { const sh = tailShape([[-.62, -5.8], [.62, -5.8], [.6, -8.2], [.4, -8.6], [-.4, -8.6], [-.6, -8.2]]); const g = new THREE.ExtrudeGeometry(sh, { depth: .07, bevelEnabled: true, bevelThickness: .02, bevelSize: .03, bevelSegments: 1 }).rotateX(-Math.PI / 2);
+    const m = new THREE.Mesh(twoTone(g), tcMat); m.position.y = -.08; m.castShadow = true; root.add(m); }
+  // gloves: the fixed, sharply swept inner wing that the outer panels pivot out of
+  for (const s of [-1, 1]) {
+    const sh = tailShape([[.6, 6.7], [2.95, 1.1], [3.05, .45], [2.95, -.9], [2.2, -2.9], [.8, -2.9]].map(([x, y]) => [s * x, y]));
+    const g = new THREE.ExtrudeGeometry(sh, { depth: .05, bevelEnabled: true, bevelThickness: .045, bevelSize: .06, bevelSegments: 2 }).rotateX(-Math.PI / 2).translate(0, .335, 0);
+    const m = new THREE.Mesh(twoTone(g), tcMat); m.castShadow = m.receiveShadow = true; root.add(m);
+  }
+  // outer wing panels on their pivots: 20° to 68° of sweep, full-span flaps on swept hinges
+  surf.flaps = [];
+  for (const s of [-1, 1]) {
+    const M = new THREE.Group(); M.scale.x = s; root.add(M);
+    const W = new THREE.Group(); W.name = s > 0 ? 'wingR' : 'wingL'; W.position.set(...TC_PIVOT); M.add(W); surf[s > 0 ? 'wingR' : 'wingL'] = W;
+    const x0 = .1, x1 = 7.05, LE = x => -1.62 + (x - x0) * Math.tan(20 * D2R), TE = x => lerp(1.75, 2.06, (x - x0) / (x1 - x0)), FC = .78, xf = 6.4;
+    const panel = (c0, c1, xa, xb, th) => {
+      const g = new THREE.BoxGeometry(1, 1, 1, 18, 1, 8), a = g.attributes.position;
+      for (let i = 0; i < a.count; i++) {
+        const u = a.getX(i) + .5, v = a.getZ(i) + .5, top = a.getY(i) > 0, X = lerp(xa, xb, u), le = LE(X), ch = TE(X) - le, cc = lerp(c0, c1, v);
+        const tip = sstep(x1 - .25, x1, X), tt = th * ch * (1 - .55 * (X - x0) / (x1 - x0)) * (1 - tip * .6);
+        const yt = tt * (1.4845 * Math.sqrt(cc) - .63 * cc - 1.758 * cc * cc + 1.4215 * cc * cc * cc - .5075 * cc * cc * cc * cc) * (c1 < 1 ? 1 : 1);
+        a.setXYZ(i, X, top ? yt * .55 : -yt * .45, le + cc * ch + tip * .12 * (1 - cc));
+      }
+      return new THREE.Mesh(twoTone(g), tcMat);
+    };
+    const main = panel(0, FC, x0, x1, .11); main.castShadow = main.receiveShadow = true; W.add(main);
+    const tipTE = panel(FC, 1, xf, x1, .11); W.add(tipTE);
+    // flap: geometry built in a frame lined up with its hinge, so it rotates about the hinge line
+    const h0 = new V3(.5, 0, LE(.5) + FC * (TE(.5) - LE(.5))), h1 = new V3(xf, 0, LE(xf) + FC * (TE(xf) - LE(xf))), hd = h1.clone().sub(h0).normalize();
+    const H = new THREE.Group(); H.position.copy(h0); H.rotation.y = Math.atan2(-hd.z, hd.x); W.add(H);
+    const F = new THREE.Group(); H.add(F); surf.flaps.push(F);
+    const fm = panel(FC, 1, .5, xf, .11), fa = fm.geometry.attributes.position, inv = new Q().setFromEuler(new THREE.Euler(0, -H.rotation.y, 0));
+    const tv = new V3(); for (let i = 0; i < fa.count; i++) { tv.set(fa.getX(i), fa.getY(i), fa.getZ(i)).sub(h0).applyQuaternion(inv); fa.setXYZ(i, tv.x, tv.y, tv.z); }
+    fm.geometry.computeVertexNormals(); F.add(fm);
+    // slat line and the wingtip formation light
+    const sl = panel(.11, .115, x0 + .4, x1 - .3, .118); sl.material = pmat(0x5b646a); W.add(sl);
+  }
+  // twin fins, canted 5° out, with rudders on slanted hinges; tail code and modex on the outer faces
+  surf.ruds = [];
+  const finTex = canvasTex(256, 256, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = '#4b5359'; g.font = '700 120px "Barlow Condensed", Arial Narrow, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('AJ', w * .5, h * .38); g.font = '700 54px "Barlow Condensed", Arial Narrow, sans-serif'; g.fillText('103', w * .5, h * .78); });
+  for (const s of [-1, 1]) {
+    const Fn = new THREE.Group(); Fn.position.set(s * 1.62, .2, 0); Fn.rotation.z = -s * 5 * D2R; root.add(Fn);
+    const fin = new THREE.Mesh(tailGeo(tailShape([[3.3, 0], [6.25, 2.3], [6.98, 2.3], [6.6, .22], [6.6, 0]]), .13).rotateY(-Math.PI / 2), pmat(TC_T)); fin.castShadow = true; Fn.add(fin);
+    const ha = Math.atan2(6.98 - 6.6, 2.3 - .22), Hn = new THREE.Group(); Hn.position.set(0, .22, 6.6); Hn.rotation.x = ha; Fn.add(Hn);
+    const R = new THREE.Group(); Hn.add(R); surf.ruds.push(R);
+    const L = Math.hypot(.38, 2.08), rg = tailGeo(tailShape([[0, 0], [0, L], [.5, L - .02], [.66, 0]]), .09).rotateY(-Math.PI / 2);
+    const rm = new THREE.Mesh(rg, pmat(TC_T)); R.add(rm);
+    const mk = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.6), new THREE.MeshLambertMaterial({ map: finTex, transparent: true, polygonOffset: true, polygonOffsetFactor: -2 })); mk.position.set(s * .085, 1.12, 5.55); mk.rotation.y = s * Math.PI / 2; Fn.add(mk);
+  }
+  // all-moving stabilators outboard of the nacelles
+  surf.stabs = [];
+  for (const s of [-1, 1]) {
+    const M = new THREE.Group(); M.scale.x = s; root.add(M);
+    const P = new THREE.Group(); P.position.set(2.1, -.12, 6.3); M.add(P); surf.stabs.push({ g: P, s });
+    const g = new THREE.ExtrudeGeometry(tailShape([[0, 1.25], [2.9, -1.4], [2.9, -2.4], [.1, -1.95], [0, -1.9]]), { depth: .06, bevelEnabled: true, bevelThickness: .02, bevelSize: .02, bevelSegments: 1 }).rotateX(-Math.PI / 2).translate(0, -.04, 0);
+    const m = new THREE.Mesh(twoTone(g), tcMat); m.castShadow = true; P.add(m);
+  }
+  // canopy and windscreen, with the frames; the crew in their helmets
+  loft2(TC_CAN, root, { mat: pmat(GLASS), M: 36 });
+  const arch = z => { const pts = []; for (let k = 0; k <= 16; k++) { const a = .12 + k / 16 * (Math.PI - .24); pts.push(canPt(z, a, .012)); } return pts; };
+  for (const z of [-6.64]) { const P = arch(z); for (let i = 1; i < P.length; i++) outside.push(bar(P[i - 1], P[i], .03, 0x30363b, root, 6)); }
+  for (const s of [-1, 1]) { outside.push(bar([s * .26, .43, -7.28], canPt(-6.64, s > 0 ? 1.02 : Math.PI - 1.02, .012), .022, 0x30363b, root, 6)); outside.push(bar(canPt(-7.25, s > 0 ? .15 : Math.PI - .15, .01), canPt(-3.1, s > 0 ? .12 : Math.PI - .12, .01), .025, 0x30363b, root, 6)); }
+  { const c = new THREE.Group(); c.name = 'crew'; root.add(c);
+    for (const [y, z] of [[1.0, -6.0], [1.04, -4.6]]) { const h = new THREE.Mesh(new THREE.SphereGeometry(.15, 14, 10), pmat(0x8f9592)); h.position.set(0, y, z); c.add(h); const v = new THREE.Mesh(new THREE.SphereGeometry(.152, 14, 8, -1.2, 2.4, 1.2, .7), pmat(0x1c2024)); v.position.set(0, y, z); v.rotation.y = Math.PI; c.add(v); box(.5, .55, .2, 0x3a3e40, 0, y - .12, z + .3, c); }
+    c.traverse(o => { if (o.isMesh) outside.push(o); }); }
+  // markings: modex on the nose, NAVY and the low-visibility national insignia on the nacelle sides
+  { const reg = canvasTex(512, 128, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = '#4b5359'; g.font = '700 104px "Barlow Condensed", Arial Narrow, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('103', w / 2, h / 2 + 4); });
+    const sv = [NTOP, NBOT]; NTOP = 2.6; NBOT = 2.5; band(TC_FWD.map(s => s.slice(0, 4)), -7.9, -7.0, () => -.1, () => .26, 0, root, [-1, 1], .008, reg); [NTOP, NBOT] = sv;
+    const navy = canvasTex(512, 128, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = '#4b5359'; g.font = '700 96px "Barlow Condensed", Arial Narrow, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('NAVY', w / 2, h / 2 + 4); });
+    const star = canvasTex(256, 128, (g, w, h) => { g.clearRect(0, 0, w, h); g.strokeStyle = '#4b5359'; g.lineWidth = 5; g.beginPath(); g.arc(w / 2, h / 2, 46, 0, 7); g.stroke();
+      g.beginPath(); for (let k = 0; k < 10; k++) { const r = k % 2 ? 18 : 44, a = -Math.PI / 2 + k * Math.PI / 5; g.lineTo(w / 2 + Math.cos(a) * r, h / 2 + Math.sin(a) * r); } g.closePath(); g.stroke(); g.strokeRect(w / 2 - 110, h / 2 - 14, 64, 28); g.strokeRect(w / 2 + 46, h / 2 - 14, 64, 28); });
+    for (const s of [-1, 1]) {
+      const a = new THREE.Mesh(new THREE.PlaneGeometry(1.5, .38), new THREE.MeshLambertMaterial({ map: navy, transparent: true, polygonOffset: true, polygonOffsetFactor: -2 })); a.position.set(s * 2.105, -.2, 1.6); a.rotation.y = s * Math.PI / 2; root.add(a);
+      const b = new THREE.Mesh(new THREE.PlaneGeometry(1.6, .8), new THREE.MeshLambertMaterial({ map: star, transparent: true, polygonOffset: true, polygonOffsetFactor: -2 })); b.position.set(s * 2.105, -.38, -1.6); b.rotation.y = s * Math.PI / 2; root.add(b);
+    } }
+  // landing gear: big single mains that fold forward into the gloves, twin nosewheels with the launch bar
+  surf.gear = [];
+  for (const s of [-1, 1]) {
+    const G0 = new THREE.Group(); G0.position.set(s * 2.3, -.42, .35); root.add(G0); surf.gear.push({ g: G0, nose: false });
+    bar([0, 0, 0], [s * .18, -1.15, .56], .09, TC_GEAR, G0, 10); bar([s * .18, -1.0, .5], [s * .2, -1.41, .65], .065, 0xc8ccd0, G0, 10, 1, 'metal');
+    bar([0, -.05, .95], [s * .14, -.85, .45], .045, TC_GEAR, G0, 8);
+    wheel(.47, .3, s * .2, -1.41, .65, G0);
+    box(.025, .62, .42, TC_B, s * .3, -.42, .3, G0);
+  }
+  { const G0 = new THREE.Group(); G0.position.set(0, -.62, -6.35); root.add(G0); surf.gear.push({ g: G0, nose: true });
+    bar([0, 0, 0], [0, -1.18, .26], .07, TC_GEAR, G0, 10); bar([0, -1.0, .22], [0, -1.4, .3], .05, 0xc8ccd0, G0, 8, 1, 'metal');
+    for (const x of [-.17, .17]) wheel(.28, .17, x, -1.4, .3, G0);
+    bar([0, -1.15, .2], [0, -.75, -.55], .035, TC_GEAR, G0, 6);
+    for (const x of [-.14, .14]) box(.02, .42, .5, TC_B, x, -.36, .05, G0); }
+  // arresting hook under the beaver tail, striped black and white
+  { const Hk = new THREE.Group(); Hk.position.set(...t.hook.p); root.add(Hk); surf.hook = Hk;
+    for (let k = 0; k < 4; k++) bar([0, 0, k * t.hook.L / 4], [0, 0, (k + 1) * t.hook.L / 4], .045, k % 2 ? 0x1c1c1c : 0xe8e8e2, Hk, 8);
+    box(.16, .12, .32, 0x2a2a2a, 0, -.04, t.hook.L, Hk, 'metal'); }
+  // animation, once a frame: sweep, flaps, tailerons, rudders, gear, hook and burners
+  surf.anim = dt => {
+    const d = (ac.sweep - 20) * D2R; surf.wingR.rotation.y = surf.wingL.rotation.y = -d;
+    const fd = T.flaps[ac.flaps].deg * D2R; for (const f of surf.flaps) f.rotation.x = approach(f.rotation.x, fd, .5, dt);
+    for (const st of surf.stabs) st.g.rotation.x = -inp.elev * .26 - st.s * inp.ail * .12 - ac.trim * .2;
+    for (const r of surf.ruds) r.rotation.y = inp.rud * .45;
+    for (const gr of surf.gear) { const k = 1 - ac.gearPos; gr.g.rotation.x = k * (gr.nose ? 1.75 : 1.8); gr.g.visible = ac.gearPos > .03; }
+    // the hook trails at its full 40° unless the deck pushes it up
+    let ha = ac.hookPos * t.hook.down * D2R;
+    if (ha > 0) { _eu.setFromQuaternion(ac.q, 'YXZ'); _tmp.set(...t.hook.p).applyQuaternion(ac.q).add(ac.pos); const gh = groundHeight(_tmp.x, _tmp.z), k = (_tmp.y - gh - .05) / t.hook.L; if (k < Math.sin(ha + _eu.x)) ha = Math.max(0, Math.asin(clamp(k, -1, 1)) - _eu.x); }
+    surf.hook.rotation.x = ha;
+    const ab = ac.ab || 0; for (const s of [-1, 1]) { const g = surf['ab' + s]; g.visible = ab > .03 && !ac.crashed; if (g.visible) { const fl = .9 + .1 * Math.sin(simT * 47 + s); g.scale.set(.85 + .2 * ab, .85 + .2 * ab, (2.2 + 2.6 * ab) * fl); }
+      surf['noz' + s].scale.set(1, 1, 1); const op = ab > .03 ? 1.08 : 1 - .06 * (ac.spool || 0); surf['noz' + s].scale.x = surf['noz' + s].scale.y = op; }
+  };
+  root.traverse(o => { if (o.isMesh && !o.material.transparent) o.castShadow = true; });
+  models[t.id] = { root, surf };
+}
+for (const t of Object.values(TYPES)) (t.id === 'c180' ? buildModel180 : t.id === 'c130' ? buildModel130 : t.id === 'f14' ? buildModelF14 : buildModel)(t);
 
 /* ---------- cockpits ---------- */
 // Each cabin is its own scene drawn after the world with the depth buffer cleared (near plane 2 cm), so nothing a hand's
@@ -1677,6 +1886,165 @@ function cabin130() {
   return { p, C };
 }
 cabins.c130 = cabin130();
+// the Tomcat's front cockpit: a narrow tub under the bubble, the HUD combiner over the glareshield with the AoA indexer
+// beside it, the VDI and HSD screens in the middle of the panel with flight instruments to the left and the engine stack
+// to the right, throttles on the left console, the gear handle on the left of the panel and the hook handle on the right
+const F14_HUD = { x: 0, y: .955, z: -6.7, w: .21, h: .2 };
+function cabinF14() {
+  const p = new THREE.Group(), C = {}, WALL = 0x4b5054, DARK = 0x1c1e20, PANEL = 0x232628, FRAME = 0x2b2f33, SEAT = 0x4c5146;
+  // tub and side consoles
+  for (const s of [-1, 1]) {
+    cbox(.05, .55, 3.6, WALL, s * .5, .2, -5.2, p);
+    cbox(.1, .05, 3.8, FRAME, s * .49, .475, -5.2, p);
+    cbox(.26, .32, 1.35, DARK, s * .35, .23, -6.0, p);
+    const m = staticPanel(.25, 1.3, 600, (g, W, H, px) => switchPanel(g, W, H, px, s < 0 ? 'THROTTLE · FUEL · ENG' : 'NAV · COMM · ECS', s < 0 ? 141 : 177));
+    m.position.set(s * .35, .392, -6.0); m.rotation.x = -Math.PI / 2; p.add(m);
+  }
+  cbox(.9, .04, 3.4, 0x2e3133, 0, -.06, -5.4, p);
+  // main panel, its shroud and the glareshield
+  cbox(.92, .48, .05, PANEL, 0, .47, -6.82, p);
+  C.panel = mkPanel(.86, .42, 0, .47, -6.792, p, 0, 1100);
+  cbox(.96, .03, .32, 0x121314, 0, .712, -6.94, p);
+  cquad([-.48, .727, -6.78], [.48, .727, -6.78], [.48, .695, -6.79], [-.48, .695, -6.79], 0x0e0f10, p);
+  for (const s of [-1, 1]) cquad([s * .43, .7, -6.8], [s * .5, .7, -6.6], [s * .5, .26, -6.6], [s * .43, .26, -6.8], PANEL, p);
+  cquad([-.43, .26, -6.8], [.43, .26, -6.8], [.3, .02, -6.35], [-.3, .02, -6.35], DARK, p);
+  // HUD: projector on the glareshield, two posts and the tinted combiner glass, with the symbology drawn on it
+  cbox(.2, .05, .22, 0x161718, 0, .75, -6.9, p);
+  for (const s of [-1, 1]) cbar([s * .108, .775, -6.76], [s * .108, 1.06, -6.69], .007, 0x161718, p, 5);
+  { const m = new THREE.Mesh(new THREE.PlaneGeometry(.215, .25), new THREE.MeshBasicMaterial({ color: 0x9fe0b8, transparent: true, opacity: .07, depthWrite: false, fog: false })); m.position.set(0, .93, -6.715); m.rotation.x = .26; p.add(m); }
+  C.hud = mkScreen(F14_HUD.w, F14_HUD.h, 512, Math.round(512 * F14_HUD.h / F14_HUD.w), F14_HUD.x, F14_HUD.y, F14_HUD.z, p);
+  Object.assign(C.hud.m.material, { transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false }); C.hud.m.renderOrder = 10;
+  // AoA indexer on the left canopy bow
+  cbox(.045, .085, .03, 0x151617, -.2, .8, -6.8, p);
+  C.aoa = mkScreen(.032, .07, 48, 104, -.2, .8, -6.784, p);
+  // canopy frames: the windscreen arch, the side bows, the sills, and the three rear-view mirrors on the arch
+  { const P = []; for (let k = 0; k <= 16; k++) P.push(canPt(-6.64, .12 + k / 16 * (Math.PI - .24), -.01)); for (let i = 1; i < P.length; i++) cbar(P[i - 1], P[i], .028, FRAME, p, 6);
+    for (const s of [-1, 1]) { cbar([s * .25, .44, -7.25], canPt(-6.64, s > 0 ? 1.02 : Math.PI - 1.02, -.01), .02, FRAME, p, 5); cbar(canPt(-7.2, s > 0 ? .15 : Math.PI - .15, -.01), canPt(-3.2, s > 0 ? .12 : Math.PI - .12, -.01), .03, FRAME, p, 5); }
+    for (const a of [.95, Math.PI / 2, Math.PI - .95]) { const q = canPt(-6.6, a, -.035); const m = cbox(.075, .028, .008, 0x7f8a90, q[0], q[1] - .015, q[2] + .025, p); m.rotation.z = Math.PI / 2 - a; } }
+  // control stick between the knees
+  C.stick = new THREE.Group(); C.stick.position.set(0, .14, -6.2); p.add(C.stick);
+  cbar([0, 0, 0], [0, .38, -.02], .014, 0x2a2b2c, C.stick, 6); cbox(.045, .12, .055, 0x1a1a1a, 0, .43, -.03, C.stick); cbox(.03, .02, .02, 0xb3251c, 0, .5, -.04, C.stick);
+  { const b = new THREE.Mesh(new THREE.CylinderGeometry(.06, .07, .05, 12), cmat(0x111111)); b.position.set(0, .13, -6.2); p.add(b); }
+  // throttles on the left console, and the wing-sweep handle beside them
+  C.thr = [];
+  for (let k = 0; k < 2; k++) { const L = new THREE.Group(); L.position.set(-.39 + k * .055, .41, -6.0); p.add(L); cbar([0, 0, 0], [0, .1, -.02], .01, 0x8a8d90, L, 5); cbox(.045, .05, .08, 0x1b1b1b, 0, .12, -.03, L); C.thr.push(L); }
+  cbox(.06, .03, .2, 0x101010, -.34, .405, -6.0, p);
+  { const L = new THREE.Group(); L.position.set(-.27, .41, -6.12); p.add(L); cbar([0, 0, 0], [0, .06, 0], .006, 0x8a8d90, L, 5); cbox(.02, .015, .035, 0xd8d6cc, 0, .066, 0, L); }
+  // gear handle (a wheel on a lever) on the left of the panel, hook handle on the right
+  C.gear = new THREE.Group(); C.gear.position.set(-.455, .6, -6.74); p.add(C.gear);
+  cbar([0, 0, 0], [0, -.09, .06], .007, 0x9a9d9f, C.gear, 5); { const w = new THREE.Mesh(new THREE.TorusGeometry(.022, .008, 6, 14), cmat(0xd8d6cc)); w.position.set(0, -.1, .065); w.rotation.y = Math.PI / 2; C.gear.add(w); }
+  C.hookH = new THREE.Group(); C.hookH.position.set(.455, .6, -6.74); p.add(C.hookH);
+  cbar([0, 0, 0], [0, -.09, .06], .007, 0x9a9d9f, C.hookH, 5); cbox(.012, .035, .03, 0x1d1d1d, 0, -.1, .07, C.hookH); cbox(.012, .012, .02, 0x1d1d1d, 0, -.12, .085, C.hookH);
+  // ejection seat (GRU-7A): headbox with the face-curtain handle above the shoulders
+  cbox(.5, .1, .5, SEAT, 0, .2, -5.82, p); cbox(.5, .7, .12, SEAT, 0, .58, -5.55, p); cbox(.36, .3, .16, 0x2e3132, 0, 1.12, -5.5, p);
+  for (const s of [-1, 1]) cbox(.06, .22, .5, DARK, s * .28, .3, -5.8, p);
+  { const h = new THREE.Mesh(new THREE.TorusGeometry(.05, .01, 6, 12, Math.PI), cmat(0xd9c02a)); h.position.set(0, 1.24, -5.55); p.add(h); }
+  // the RIO's cockpit behind: his coaming and the big round tactical display
+  cbox(.86, .05, .25, 0x121314, 0, .78, -5.12, p); cbox(.86, .4, .04, PANEL, 0, .55, -5.0, p);
+  { const m = new THREE.Mesh(new THREE.CircleGeometry(.11, 24), cmat(0x0d1a12)); m.position.set(0, .55, -5.02); m.rotation.y = Math.PI; p.add(m); }
+  return { p, C };
+}
+cabins.f14 = cabinF14();
+// F-14 gauge faces
+const asiJAngle = v => v < 100 ? -2.6 + v / 100 * .9 : -1.7 + Math.log(Math.min(v, 850) / 100) / Math.log(8) * 4.1;
+function asiJFace(g, cx, cy, r) {
+  face(g, cx, cy, r);
+  for (const v of [60, 80, 100, 120, 140, 160, 180, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800]) tick(g, cx, cy, r, asiJAngle(v), v % 100 ? .08 : .15, v % 100 ? r * .03 : r * .05);
+  for (const v of [100, 150, 200, 300, 400, 600, 800]) label(g, cx, cy, r * .66, asiJAngle(v), String(v / 10), r * .19);
+  tick(g, cx, cy, r, asiJAngle(225), .2, r * .05, '#e8c22a');
+  text(g, cx, cy - r * .32, 'KNOTS ×10', r * .12, '#b8b6ad'); g.fillStyle = '#000'; g.fillRect(cx - r * .3, cy + r * .2, r * .6, r * .24);
+}
+const aoaAngle = u => -2.35 + clamp(u, 0, 30) / 30 * 4.7;
+function aoaFace(g, cx, cy, r) {
+  face(g, cx, cy, r);
+  arcBand(g, cx, cy, r * .86, aoaAngle(13.5), aoaAngle(14.6), r * .1, '#2fa84a'); arcBand(g, cx, cy, r * .86, aoaAngle(14.6), aoaAngle(15.4), r * .1, '#e8a22a'); arcBand(g, cx, cy, r * .86, aoaAngle(15.4), aoaAngle(16.5), r * .1, '#d84a2a');
+  for (let u = 0; u <= 30; u++) tick(g, cx, cy, r, aoaAngle(u), u % 5 ? .07 : .15, u % 5 ? r * .025 : r * .05);
+  for (let u = 0; u <= 30; u += 10) label(g, cx, cy, r * .64, aoaAngle(u), String(u), r * .22);
+  text(g, cx, cy + r * .45, 'AOA UNITS', r * .12, '#b8b6ad');
+}
+function crtBezel(g, x, y, w, h, lab) {
+  g.fillStyle = '#060606'; g.fillRect(x - w / 2 - 8, y - h / 2 - 8, w + 16, h + 16); g.fillStyle = '#2a2d30'; g.fillRect(x - w / 2 - 5, y - h / 2 - 5, w + 10, h + 10); g.fillStyle = '#050806'; g.fillRect(x - w / 2, y - h / 2, w, h);
+  text(g, x, y + h / 2 + 14, lab, 11, '#b8b6ad');
+  for (let k = 0; k < 4; k++) { knob(g, x - w / 2 - 14, y - h / 3 + k * h / 4.5, 4, '#1d1d1d'); knob(g, x + w / 2 + 14, y - h / 3 + k * h / 4.5, 4, '#1d1d1d'); }
+}
+// vertical display indicator: a green-on-black attitude picture with the pitch ladder and a heading strip
+function drawVDI(g, cx, cy, w, h, pitch, roll, hdg) {
+  g.save(); g.beginPath(); g.rect(cx - w / 2, cy - h / 2, w, h); g.clip();
+  g.translate(cx, cy); g.rotate(-roll);
+  const ppd = h / 50, off = pitch * R2D * ppd;
+  g.fillStyle = '#0c2414'; g.fillRect(-w, off, w * 2, h * 2); g.fillStyle = '#04100a'; g.fillRect(-w, off - h * 2, w * 2, h * 2);
+  g.strokeStyle = '#7dffa0'; g.fillStyle = '#7dffa0'; g.lineWidth = 2; g.beginPath(); g.moveTo(-w, off); g.lineTo(w, off); g.stroke();
+  g.font = '11px B612, Arial'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (let d = -40; d <= 40; d += 10) { if (!d) continue; const y = off - d * ppd, l = w * .2; g.beginPath(); g.moveTo(-l, y); g.lineTo(l, y); g.stroke(); g.fillText(String(Math.abs(d)), l + 12, y); }
+  // perspective lines into the ground
+  g.lineWidth = 1; for (let k = -4; k <= 4; k++) { g.beginPath(); g.moveTo(k * 8, off); g.lineTo(k * 60, off + h); g.stroke(); }
+  g.restore();
+  g.strokeStyle = '#ffd34a'; g.lineWidth = 3; g.beginPath(); g.moveTo(cx - w * .3, cy); g.lineTo(cx - w * .08, cy); g.lineTo(cx, cy + 8); g.lineTo(cx + w * .08, cy); g.lineTo(cx + w * .3, cy); g.stroke();
+  g.fillStyle = '#7dffa0'; g.font = '12px B612 Mono, monospace'; g.textAlign = 'center'; g.fillText(String(Math.round(hdg) % 360 || 360).padStart(3, '0'), cx, cy - h / 2 + 12);
+}
+// horizontal situation display: heading-up compass rose with the bearing and range to the ship
+function drawHSD(g, cx, cy, w, h, hdg) {
+  g.save(); g.beginPath(); g.rect(cx - w / 2, cy - h / 2, w, h); g.clip();
+  const r = h * .42; g.strokeStyle = '#7dffa0'; g.fillStyle = '#7dffa0'; g.lineWidth = 1.5; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.stroke();
+  g.font = '11px B612, Arial'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (let d = 0; d < 360; d += 10) { const a = (d - hdg) * D2R, l = d % 30 ? .08 : .14; g.beginPath(); g.moveTo(cx + Math.sin(a) * r, cy - Math.cos(a) * r); g.lineTo(cx + Math.sin(a) * r * (1 - l), cy - Math.cos(a) * r * (1 - l)); g.stroke(); if (d % 30 === 0) g.fillText({ 0: 'N', 90: 'E', 180: 'S', 270: 'W' }[d] || String(d / 10), cx + Math.sin(a) * r * .74, cy - Math.cos(a) * r * .74); }
+  g.beginPath(); g.moveTo(cx, cy - 8); g.lineTo(cx - 6, cy + 8); g.lineTo(cx + 6, cy + 8); g.closePath(); g.fill();
+  if (atSea) { const b = Math.atan2(-ac.pos.x, ac.pos.z) * R2D, a = (b - hdg) * D2R, d = Math.hypot(ac.pos.x, ac.pos.z) / 1852;
+    g.strokeStyle = '#ffd34a'; g.lineWidth = 2.5; g.beginPath(); g.moveTo(cx - Math.sin(a) * r * .8, cy + Math.cos(a) * r * .8); g.lineTo(cx + Math.sin(a) * r * .9, cy - Math.cos(a) * r * .9); g.stroke();
+    g.fillStyle = '#ffd34a'; g.textAlign = 'left'; g.fillText(`CVN ${d.toFixed(1)}`, cx - w / 2 + 6, cy + h / 2 - 10); }
+  g.restore();
+}
+function drawIndexer(S) {
+  const { g, cv, tex } = S, W = cv.width, Hh = cv.height, u = ac.alpha * R2D * 1.41, on = ac.gearPos > .99 && !ac.onGround && !ac.crashed;
+  g.fillStyle = '#080808'; g.fillRect(0, 0, W, Hh);
+  const lit = [on && u > 15.8, on && u > 14.2 && u < 17.5, on && u < 15.8], col = ['#3fe36a', '#ffb02e', '#ff4a32'], dim = ['#12301a', '#3a2a10', '#3a1410'];
+  g.lineWidth = 7; g.lineCap = 'round';
+  g.strokeStyle = lit[0] ? col[0] : dim[0]; g.beginPath(); g.moveTo(10, 10); g.lineTo(W / 2, 30); g.lineTo(W - 10, 10); g.stroke();
+  g.strokeStyle = lit[1] ? col[1] : dim[1]; g.beginPath(); g.arc(W / 2, Hh / 2, 11, 0, 7); g.stroke();
+  g.strokeStyle = lit[2] ? col[2] : dim[2]; g.beginPath(); g.moveTo(10, Hh - 10); g.lineTo(W / 2, Hh - 30); g.lineTo(W - 10, Hh - 10); g.stroke();
+  tex.needsUpdate = true;
+}
+// head-up display: drawn on the combiner from the pilot's eye, so the pitch ladder and velocity vector lie over the world
+const _hv = new V3(), _hc = new V3(), _hr = new V3(), _hqi = new Q();
+function drawHUD14(S) {
+  const { g, cv, tex } = S, W = cv.width, Hh = cv.height, Hd = F14_HUD, K = W / Hd.w, [ex, ey, ez] = T.eye, D = ez - Hd.z;
+  g.clearRect(0, 0, W, Hh);
+  _hqi.copy(ac.q).invert();
+  const P = v => { _hv.copy(v).applyQuaternion(_hqi); if (_hv.z > -1e-3) return null; const k = D / -_hv.z; return [W / 2 + (ex + _hv.x * k - Hd.x) * K, Hh / 2 - (ey + _hv.y * k - Hd.y) * K]; };
+  const G = '#6dff94'; g.strokeStyle = G; g.fillStyle = G; g.lineWidth = 2.6; g.font = '20px B612, Arial'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  _hc.set(0, 0, -1).applyQuaternion(ac.q); const psi = Math.atan2(_hc.x, -_hc.z), pitch = Math.asin(clamp(_hc.y, -1, 1)) * R2D;
+  _hr.set(Math.cos(psi), 0, Math.sin(psi));
+  const seg = (e, a0, a1, dash) => { const ce = Math.cos(e * D2R), se = Math.sin(e * D2R), cx = Math.sin(psi) * ce, cz = -Math.cos(psi) * ce;
+    const A = P(new V3(cx + _hr.x * a0, se, cz + _hr.z * a0).normalize()), B = P(new V3(cx + _hr.x * a1, se, cz + _hr.z * a1).normalize()); if (!A || !B) return null;
+    g.setLineDash(dash ? [9, 7] : []); g.beginPath(); g.moveTo(...A); g.lineTo(...B); g.stroke(); g.setLineDash([]); return B; };
+  for (let e = Math.ceil((pitch - 25) / 5) * 5; e <= pitch + 25; e += 5) {
+    if (e < -85 || e > 85) continue;
+    if (e === 0) { seg(0, -.5, -.035); seg(0, .035, .5); continue; }
+    for (const s of [-1, 1]) { const B = seg(e, s * .03, s * .1, e < 0); if (B) { const C2 = P(new V3(Math.sin(psi) * Math.cos(e * D2R) + _hr.x * s * .1, Math.sin(e * D2R) - Math.sign(e) * .012, -Math.cos(psi) * Math.cos(e * D2R) + _hr.z * s * .1).normalize()); if (C2) { g.beginPath(); g.moveTo(...B); g.lineTo(...C2); g.stroke(); } g.fillText(String(Math.abs(e)), B[0] + s * 24, B[1]); } }
+  }
+  // waterline symbol at the gun line, and the velocity vector
+  const wl = P(_hv.set(0, 0, -1).applyQuaternion(ac.q).clone());
+  if (wl) { g.beginPath(); g.moveTo(wl[0] - 34, wl[1]); g.lineTo(wl[0] - 16, wl[1]); g.lineTo(wl[0] - 8, wl[1] + 9); g.lineTo(wl[0], wl[1]); g.lineTo(wl[0] + 8, wl[1] + 9); g.lineTo(wl[0] + 16, wl[1]); g.lineTo(wl[0] + 34, wl[1]); g.stroke(); }
+  const vv = ac.vel.lengthSq() > 25 ? P(ac.vel.clone().normalize()) : null;
+  if (vv) { const [x, y] = vv; g.beginPath(); g.arc(x, y, 9, 0, 7); g.moveTo(x - 9, y); g.lineTo(x - 26, y); g.moveTo(x + 9, y); g.lineTo(x + 26, y); g.moveTo(x, y - 9); g.lineTo(x, y - 20); g.stroke();
+    // approach: the AoA bracket beside the velocity vector; on-speed when the vector sits in the middle of it
+    if (ac.gearPos > .99 && !ac.onGround) { const u = ac.alpha * R2D * 1.41, by = y + clamp(u - 15, -4, 4) * 8; g.beginPath(); g.moveTo(x - 30, by - 18); g.lineTo(x - 38, by - 18); g.lineTo(x - 38, by + 18); g.lineTo(x - 30, by + 18); g.moveTo(x - 38, by); g.lineTo(x - 44, by); g.stroke(); } }
+  // heading tape along the top, airspeed and altitude boxes, AoA, Mach and g underneath
+  const hd = (psi * R2D + 360) % 360; g.save(); g.beginPath(); g.rect(W * .25, 0, W * .5, 60); g.clip();
+  for (let d = Math.floor((hd - 30) / 5) * 5; d <= hd + 30; d += 5) { const x = W / 2 + (d - hd) * 6; g.beginPath(); g.moveTo(x, 34); g.lineTo(x, d % 10 ? 42 : 48); g.stroke(); if (d % 10 === 0) g.fillText(String(((d + 360) % 360) / 10 | 0).padStart(2, '0'), x, 20); }
+  g.restore(); g.beginPath(); g.moveTo(W / 2, 52); g.lineTo(W / 2 - 7, 62); g.lineTo(W / 2 + 7, 62); g.closePath(); g.fill();
+  g.font = '24px B612 Mono, monospace';
+  g.strokeRect(W * .06, Hh * .46 - 17, 80, 34); g.fillText(String(Math.round(ac.ias * KT)), W * .06 + 40, Hh * .46);
+  g.strokeRect(W * .94 - 96, Hh * .46 - 17, 96, 34); g.fillText(String(Math.round(ac.pos.y * FT)), W * .94 - 48, Hh * .46);
+  g.font = '19px B612 Mono, monospace'; g.textAlign = 'left';
+  g.fillText(`α ${(ac.alpha * R2D * 1.41).toFixed(1)}`, W * .06, Hh * .62); g.fillText(`M ${(ac.mach || 0).toFixed(2)}`, W * .06, Hh * .69); g.fillText(`G ${(ac.nz || 1).toFixed(1)}`, W * .06, Hh * .76);
+  g.textAlign = 'right'; g.fillText(`${Math.round(instr.vsi / 10) * 10}`, W * .94, Hh * .58);
+  g.textAlign = 'center';
+  const st = [ac.gearPos > .99 ? 'GEAR' : ac.gearPos > .01 ? 'GEAR ◇' : '', ac.hook ? 'HOOK' : '', ac.flaps ? 'FLAPS' : '', ac.ab > .05 ? 'AB' : ''].filter(Boolean).join('  ');
+  g.fillText(st, W / 2, Hh - 22);
+  if (ac.cat) g.fillText(ac.cat.st === 'hold' ? 'CAT 1 · RUN UP' : ac.cat.st === 'stroke' ? 'LAUNCH' : '', W / 2, Hh * .82);
+  tex.needsUpdate = true;
+}
 for (const k in cabins) { cabins[k].p.visible = false; cockpit.add(cabins[k].p); }
 
 /* ---------- panel artwork ---------- */
@@ -1684,7 +2052,8 @@ for (const k in cabins) { cabins[k].p.visible = false; cockpit.add(cabins[k].p);
 const ASI = {
   j3: { unit: 'MPH', lo: 40, max: 140, step: 20, green: [38, 100], red: 122 },
   c180: { unit: 'KNOTS', lo: 40, max: 200, step: 20, white: [48, 87], green: [56, 143], red: 171 },
-  c130: { unit: 'KNOTS', lo: 60, max: 360, step: 40, red: 320 }
+  c130: { unit: 'KNOTS', lo: 60, max: 360, step: 40, red: 320 },
+  f14: { unit: 'KNOTS', lo: 60, max: 800, step: 100, red: 800 }
 };
 const TACH = { j3: { max: 3000, green: [1600, 2300], red: 2300, ccw: true }, c180: { max: 3500, green: [2000, 2400], red: 2400, ccw: false } };
 const LAYOUT = {
@@ -1701,6 +2070,12 @@ const LAYOUT = {
     ['asi', .38, 1.1], ['ai', .55, 1.1, .052], ['alt', .72, 1.1], ['tc', .38, .96], ['dg', .55, .96, .052], ['vsi', .72, .96], ['clock', .9, 1.12, .026], ['vor2', .9, .97, .032],
     ...[-.165, -.055, .055, .165].flatMap(x => [['torq', x, 1.15, .036], ['tit', x, 1.065, .036], ['rpm130', x, .98, .036], ['ff', x, .895, .036]]),
     ['flapInd', .33, .8]] },
+  // the Tomcat: AoA, airspeed, altitude and vertical speed down the left, the VDI over the HSD in the middle, the two
+  // engines' rpm, turbine temperature, fuel flow and nozzle position on the right, then g, wing sweep and fuel
+  f14: { R: .032, items: [['aoaU', -.35, .61, .03], ['asiJ', -.35, .505, .036], ['alt', -.35, .395, .036], ['vsi', -.25, .315, .027], ['ai', -.225, .61, .028], ['clock', -.36, .3, .02], ['gearInd', -.215, .475],
+    ['vdi', 0, .565], ['hsd', 0, .345],
+    ['n2', .175, .615, .03], ['n2', .265, .615, .03], ['tit14', .175, .535, .03], ['tit14', .265, .535, .03], ['ff14', .175, .455, .03], ['ff14', .265, .455, .03], ['noz', .175, .375, .03], ['noz', .265, .375, .03],
+    ['gmeter', .365, .6, .029], ['sweep', .365, .49, .029], ['fuelJ', .365, .38, .029]] },
 };
 function drawStatic(id) {
   const P = cabins[id].C.panel, g = P.bgg, W = P.bg.width, Hh = P.bg.height, L = LAYOUT[id];
@@ -1761,7 +2136,24 @@ function drawStatic(id) {
       case 'rpm130': engFace(g, cx, cy, r, 'RPM %', ['0', '30', '60', '90', '120'], [94 / 120, 104 / 120], 106 / 120); break;
       case 'ff': engFace(g, cx, cy, r, 'FF ×100 PPH', ['0', '10', '20', '30'], [.08, .85]); break;
       case 'ai': case 'dg': case 'tc': break;
+      case 'aoaU': aoaFace(g, cx, cy, r); screws(g, cx, cy, r); break;
+      case 'asiJ': asiJFace(g, cx, cy, r); screws(g, cx, cy, r); break;
+      case 'n2': engFace(g, cx, cy, r, 'RPM ×10 %', ['0', '2', '4', '6', '8', '10'], [.6, 1], 1.03); text(g, cx, cy - r * .3, x < .22 ? 'L' : 'R', r * .2, '#b8b6ad'); break;
+      case 'tit14': engFace(g, cx, cy, r, 'TIT ×100°C', ['0', '3', '6', '9', '12'], [.3, .92], .95); break;
+      case 'ff14': engFace(g, cx, cy, r, 'FF ×1000 PPH', ['0', '10', '20', '30', '40'], [.04, .3]); break;
+      case 'noz': engFace(g, cx, cy, r, 'NOZ POS %', ['0', '25', '50', '75', '100']); break;
+      case 'fuelJ': engFace(g, cx, cy, r, 'FUEL ×1000 LB', ['0', '4', '8', '12', '16', '20']); g.fillStyle = '#000'; g.fillRect(cx - r * .38, cy + r * .12, r * .76, r * .22); text(g, cx, cy + r * .23, '06200', r * .17, '#e8e4d4', 'center', 'B612 Mono, monospace'); break;
+      case 'gmeter': face(g, cx, cy, r); for (let v = -4; v <= 10; v++) { const a = -2.4 + (v + 4) / 14 * 4.8; tick(g, cx, cy, r, a, v % 2 ? .08 : .15, r * .04, v >= 7 ? '#e23b2e' : INK); if (v % 2 === 0) label(g, cx, cy, r * .64, a, String(v), r * .22); } text(g, cx, cy + r * .45, 'G', r * .2, '#b8b6ad'); break;
+      case 'sweep': face(g, cx, cy, r); for (let v = 20; v <= 75; v += 5) { const a = -2.1 + (v - 20) / 55 * 4.2; tick(g, cx, cy, r, a, v % 10 ? .08 : .15, r * .04); if (v % 20 === 0 || v === 75) label(g, cx, cy, r * .64, a, String(v), r * .2); } text(g, cx, cy + r * .45, 'WING SWEEP', r * .12, '#b8b6ad'); break;
+      case 'vdi': crtBezel(g, cx, cy, .2 * px, .2 * px, 'VDI'); break;
+      case 'hsd': crtBezel(g, cx, cy, .2 * px, .17 * px, 'HSD'); break;
+      case 'gearInd': g.fillStyle = '#0b0b0b'; g.fillRect(cx - .03 * px, cy - .045 * px, .06 * px, .09 * px); text(g, cx, cy + .056 * px, 'GEAR · HOOK', .0075 * px, '#e8e6dc'); break;
     }
+  }
+  if (id === 'f14') {
+    text(g, X(0), Y(.672), 'MASTER ARM · ACM', .008 * px, '#cfccc0');
+    for (let k = 0; k < 6; k++) { g.fillStyle = ['#3a1410', '#3a2a10', '#12301a', '#3a2a10', '#3a1410', '#12301a'][k]; g.fillRect(X(-.17 + k * .058), Y(.69), .05 * px, .012 * px); }
+    for (let k = 0; k < 4; k++) toggleSw(g, X(-.4 + k * .045), Y(.235 + .04), .014 * px, ['ANTI-SKID', 'HOOK BYP', 'LDG LT', 'NWS'][k], k !== 1);
   }
   if (id === 'c130') {
     // landing gear handle (down, three greens) on the pilot's side of the centre panel
@@ -2003,16 +2395,329 @@ function buildMoon() {
 }
 const moonSky = new THREE.Group(); moonSky.visible = false; scene.add(moonSky);
 function setWorld(loc) {
-  const moon = loc === 'moon'; settings.loc = moon ? 'moon' : 'earth';
+  const moon = loc === 'moon', sea = loc === 'sea'; settings.loc = moon ? 'moon' : sea ? 'sea' : 'earth';
   if (moon) buildMoon();
-  onMoon = moon; G = moon ? G_MOON : G_EARTH;
+  if (sea) buildSea();
+  onMoon = moon; atSea = sea; G = moon ? G_MOON : G_EARTH;
   GH = moon ? HM : H; GHC = moon ? HCM : HC;
-  for (const o of earthObjs) o.visible = !moon;
-  moonGroup.visible = moonSky.visible = moon;
+  for (const o of earthObjs) o.visible = !moon && !sea;
+  moonGroup.visible = moonSky.visible = moon; seaGroup.visible = sea;
   // gear springs were sized for Earth weight; on the Moon they are softened so the aircraft sits on them instead of bouncing
   for (const t of Object.values(TYPES)) for (const w of t.wheels) { if (w.k0 === undefined) { w.k0 = w.k; w.c0 = w.c; } w.k = w.k0 * (moon ? G_MOON / G_EARTH : 1); w.c = w.c0 * (moon ? Math.sqrt(G_MOON / G_EARTH) : 1); }
   applyWeather(settings.wx);
   fillTrees(ac.pos.x, ac.pos.z, true);
+}
+
+/* ---------- at sea: a Nimitz-class carrier in the Gulf ---------- */
+// USS Theodore Roosevelt (CVN-71): a 1,092 ft flight deck about 62 ft above the water, the landing area angled 9° to port,
+// four arresting wires, two catapults on the bow and two in the waist. The ship stays at the origin heading north (-Z) and
+// the sim flies in her frame: the 25 knots she makes through the water plus a little natural wind arrive as 27 knots of
+// wind straight down the angled deck, and the sea slides aft past the hull.
+const DECK = 19, SHIP_V = 25 / KT, ANG = 9 * D2R, GS = 3.5 * D2R;
+const LDx = -Math.sin(ANG), LDz = -Math.cos(ANG), LRx = Math.cos(ANG), LRz = -Math.sin(ANG);   // landing direction, and to its right
+const RAMP = { x: 4, z: 163 };                                                                   // landing centreline at the round-down
+const ldU = (x, z) => (x - RAMP.x) * LDx + (z - RAMP.z) * LDz, ldV = (x, z) => (x - RAMP.x) * LRx + (z - RAMP.z) * LRz;
+const ldX = (u, v) => RAMP.x + u * LDx + v * LRx, ldZ = (u, v) => RAMP.z + u * LDz + v * LRz;
+const WIRES = [48, 60.5, 73, 85.5], WIRE_HW = 14, RUNOUT = 92;
+const LENS = { u: 139, v: -16.5, y: DECK + 1.2 };          // the Fresnel lens, on the port deck edge
+const LSO = { u: 30, v: -18.5 };
+const CAT1 = { x: 7, z0: -70, len: 94, a: 20 };              // bow catapult 1: C-13-1, 309 ft power stroke
+const AXIAL_X = -3;                                          // straight-deck line for aircraft without a hook
+const ISLAND = { x0: 25.5, x1: 32, z0: 14, z1: 50, top: DECK + 40 };
+const xEdge = z => -13 - (163 - z) * .1584;                  // port edge of the angled deck, parallel to the landing line
+const DECK_OUT = [[-8, -166], [8, -166], [14, -158], [20, -140], [25, -110], [28, -80], [29, -64], [33, -63], [33, -40], [30, -40], [30, -28], [33, -28], [33, -5],
+  [30, -5], [31, 10], [32, 14], [32, 52], [31, 57], [33, 58], [33, 81], [28, 81], [26, 110], [24, 140], [22, 165], [-19, 165], [-19, 125],
+  [xEdge(110), 110], [xEdge(60), 60], [xEdge(0), 0], [xEdge(-40), -40], [xEdge(-48), -48], [-40, -60], [-31, -76], [-24, -96], [-20, -120], [-15, -145]];
+const GAL_OUT = [[-6, -163], [6, -163], [12, -156], [18, -140], [23, -110], [26, -80], [28, -40], [29, 0], [29, 60], [25, 110], [22, 140], [20, 162], [-17, 162], [-17, 125],
+  [xEdge(110) + 2, 110], [xEdge(60) + 2, 60], [xEdge(0) + 2, 0], [xEdge(-40) + 2, -40], [xEdge(-48) + 2.5, -47], [-38, -58], [-29.5, -74], [-22.5, -95], [-18.5, -120], [-13.5, -145]];
+function inPoly(P, x, z) {
+  let c = false;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, zi] = P[i], [xj, zj] = P[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) c = !c; }
+  return c;
+}
+const onDeck = (x, z) => x > -47 && x < 34 && z > -167 && z < 166 && inPoly(DECK_OUT, x, z);
+function seaGround(x, z) { return onDeck(x, z) ? DECK : 0; }
+const inIsland = (x, y, z) => x > ISLAND.x0 && x < ISLAND.x1 && z > ISLAND.z0 && z < ISLAND.z1 && y < ISLAND.top;
+// hull half-widths: at the waterline (the stem is raked aft of the flight deck's bow) and at the gallery deck
+const hwWL = z => z < -158 ? 0 : z < -60 ? 20.4 * Math.sin(Math.PI / 2 * (z + 158) / 98) : z < 110 ? 20.4 : lerp(20.4, 15.5, (z - 110) / 50);
+const hwTop = z => z < -166 ? 0 : z < -110 ? lerp(3, 18.5, Math.sin(Math.PI / 2 * (z + 166) / 56)) : z < -80 ? lerp(18.5, 21, (z + 110) / 30) : z < 130 ? 21 : lerp(21, 19.5, (z - 130) / 31);
+const seaGroup = new THREE.Group(); seaGroup.visible = false; scene.add(seaGroup);
+const seaObs = [];
+let seaBuilt = false, seaWater = null, seaTex = null, wakeMat = null;
+const SEA = { wires: [], lens: null, ball: null, ballR: null, datum: [], waveoff: [], jbd: null, shuttle: null, radar: null, lights: [], parked: [] };
+const SEA_TILE = 48;
+function glowTex(r, g, b) {
+  return canvasTex(64, 64, (c, w, h) => { const gr = c.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.25, `rgba(${r},${g},${b},1)`); gr.addColorStop(1, `rgba(${r},${g},${b},0)`); c.fillStyle = gr; c.fillRect(0, 0, w, h); });
+}
+function seaLight(tex, size) {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+  s.userData.size = size; s.scale.setScalar(size); seaGroup.add(s); SEA.lights.push(s); return s;
+}
+function buildSea() {
+  if (seaBuilt) return; seaBuilt = true;
+  // the open Gulf: a normal-mapped swell that slides aft at the ship's speed
+  {
+    const S = 256, hn = tiledNoise(S, 8, 4, 77), at = (i, j) => hn[((j + S) % S) * S + (i + S) % S];
+    seaTex = dataTex(S, k => { const i = k % S, j = Math.floor(k / S), nx = (at(i - 1, j) - at(i + 1, j)) * 6, nz = (at(i, j - 1) - at(i, j + 1)) * 6, l = Math.hypot(nx, nz, 1); return [(nx / l * .5 + .5) * 255, (nz / l * .5 + .5) * 255, (1 / l * .5 + .5) * 255]; });
+    seaTex.repeat.set(90000 / SEA_TILE, 90000 / SEA_TILE);
+    seaWater = new THREE.Mesh(new THREE.PlaneGeometry(90000, 90000).rotateX(-Math.PI / 2), new THREE.MeshPhongMaterial({ color: 0x1c3e55, specular: 0x7f95a3, shininess: 55, normalMap: seaTex, normalScale: new THREE.Vector2(.55, .55) }));
+    seaWater.receiveShadow = true; seaWater.frustumCulled = false; seaGroup.add(seaWater);
+  }
+  // wake and bow wave: foam that streams aft from the hull and spreads behind the stern
+  {
+    const S = 128, fn = tiledNoise(S, 6, 4, 5), foam = dataTex(S, i => { const v = fn[i] * 255; return [v, v, v]; });
+    wakeMat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, fog: true,
+      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uT: { value: 0 }, uTex: { value: null } }]),
+      vertexShader: `#include <common>
+        #include <fog_pars_vertex>
+        #include <logdepthbuf_pars_vertex>
+        attribute float aFade; varying float vFade; varying vec2 vW;
+        void main() {
+          vFade = aFade; vW = position.xz;
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mvPosition;
+          #include <logdepthbuf_vertex>
+          #include <fog_vertex>
+        }`,
+      fragmentShader: `#include <common>
+        #include <fog_pars_fragment>
+        #include <logdepthbuf_pars_fragment>
+        uniform float uT; uniform sampler2D uTex; varying float vFade; varying vec2 vW;
+        void main() {
+          #include <logdepthbuf_fragment>
+          float n = texture2D(uTex, (vW - vec2(0.0, uT)) / 37.0).r * 0.6 + texture2D(uTex, (vW * 1.9 - vec2(11.0, uT * 1.9)) / 37.0).r * 0.4;
+          float a = smoothstep(1.0 - vFade, 1.25 - vFade, n) * min(1.0, vFade * 1.5);
+          gl_FragColor = vec4(0.92, 0.95, 0.96, a * 0.85);
+          #include <fog_fragment>
+        }`
+    });
+    wakeMat.uniforms.uTex.value = foam;
+    const pos = [], fade = [], idx = [];
+    const strip = (rows, cols) => { const o = pos.length / 3; for (const r of rows) for (const [x, f] of r.pts) { pos.push(x, .12, r.z); fade.push(f); }
+      for (let i = 0; i < rows.length - 1; i++) for (let k = 0; k < cols - 1; k++) { const a = o + i * cols + k, b = a + cols; idx.push(a, b, a + 1, a + 1, b, b + 1); } };
+    const wr = [];
+    for (let z = 150; z < 3200; z += z < 400 ? 12 : 60) {
+      const w = 15 + (z - 150) * .085, e = Math.exp(-(z - 150) / 1300), cols = [-1.25, -1, -.6, -.25, 0, .25, .6, 1, 1.25];
+      wr.push({ z, pts: cols.map(c => [c * w, Math.max(0, e * (Math.abs(c) > 1.1 ? 0 : Math.abs(c) > .9 ? .55 : .95 - .25 * Math.abs(c)) * (z < 175 ? .7 + (z - 150) * .012 : 1))]) });
+    }
+    strip(wr, 9);
+    for (const s of [-1, 1]) {
+      const rows = [];
+      for (let z = -158; z <= 156; z += 6) { const h = hwWL(z), bow = sstep(-100, -158, z); rows.push({ z, pts: [[s * Math.max(.3, h - .3), .9], [s * (h + 2.5 + 5 * bow), .55 + .3 * bow], [s * (h + 7 + 12 * bow), 0]] }); }
+      strip(rows, 3);
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('aFade', new THREE.Float32BufferAttribute(fade, 1)); g.setIndex(idx);
+    const m = new THREE.Mesh(g, wakeMat); m.renderOrder = 2; m.frustumCulled = false; seaGroup.add(m);
+  }
+  const HAZE_GREY = 0x8b9297, DARK = 0x2a2d30;
+  const smat = (c, e = 0) => new THREE.MeshLambertMaterial({ color: c, emissive: new THREE.Color(c).multiplyScalar(e) });
+  const sbox = (w, h, d, c, x, y, z, p = seaGroup, m) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m || smat(c)); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; p.add(o); return o; };
+  // hull: flared sides from the waterline up to the gallery deck, black boot-topping at the waterline
+  {
+    const pos = [], col = [], idx = [], ring = 9, Z = [];
+    for (let z = -166; z <= 161; z += z < -130 ? 2 : 5) Z.push(z);
+    const grey = new THREE.Color(0x7d8489), boot = new THREE.Color(0x1d1f21), red = new THREE.Color(0x5a2a26);
+    for (const z of Z) {
+      const t = hwTop(z), w = hwWL(z), ys = [14.5, 9, 4, 1.1, .9, -3];
+      const hw = y => y >= 9 ? lerp(Math.max(w, t * .9), t, (y - 9) / 5.5) : y >= 1 ? lerp(w, Math.max(w, t * .9), (y - 1) / 8) : w * (1 - (1 - y) * .03);
+      const pts = []; for (const y of ys) pts.push([-hw(y), y]); for (let k = ys.length - 1; k >= 0; k--) pts.push([hw(ys[k]), ys[k]]);
+      for (const [x, y] of pts) { pos.push(x, y, z); const c = y > 1.05 ? grey : y > 0 ? boot : red; col.push(c.r, c.g, c.b); }
+    }
+    const n = 12;
+    for (let i = 0; i < Z.length - 1; i++) for (let k = 0; k < n - 1; k++) { const a = i * n + k, b = a + n; idx.push(a, a + 1, b, a + 1, b + 1, b); }
+    const o = (Z.length - 1) * n; for (let k = 1; k < n / 2 - 1; k++) idx.push(o, o + k + 1, o + k, o + n - 1, o + n - 1 - k, o + n - 2 - k);   // transom
+    for (let k = 0; k < n / 2 - 1; k++) idx.push(o + k, o + k + 1, o + n - 2 - k, o + k, o + n - 2 - k, o + n - 1 - k);
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })); m.receiveShadow = true; seaGroup.add(m);
+    // the sloping sponson structure under the deck overhangs, from the gallery edge down to the hull side
+    const sp = [], si = [];
+    for (const s of [-1, 1]) {
+      const o2 = sp.length / 3, zs = [];
+      for (let z = -150; z <= 160; z += 5) zs.push(z);
+      for (const z of zs) {
+        let xg = s < 0 ? Infinity : -Infinity;
+        for (let i = 0, j = GAL_OUT.length - 1; i < GAL_OUT.length; j = i++) { const [xi, zi] = GAL_OUT[i], [xj, zj] = GAL_OUT[j]; if ((zi > z) !== (zj > z)) { const x = xi + (xj - xi) * (z - zi) / (zj - zi); xg = s < 0 ? Math.min(xg, x) : Math.max(xg, x); } }
+        const xh = s * hwTop(z) * .985, out = Math.abs(xg) > Math.abs(xh) + .5;
+        sp.push(xg, 14.52, z, xh, out ? 14.5 - Math.min(9, (Math.abs(xg) - Math.abs(xh)) * .55) : 14.5, z);
+      }
+      for (let i = 0; i < zs.length - 1; i++) { const a = o2 + i * 2, b = a + 2; s < 0 ? si.push(a, b, a + 1, a + 1, b, b + 1) : si.push(a, a + 1, b, a + 1, b + 1, b); }
+    }
+    const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3)); g2.setIndex(si); g2.computeVertexNormals();
+    const m2 = new THREE.Mesh(g2, new THREE.MeshLambertMaterial({ color: 0x737a7f, side: THREE.DoubleSide })); m2.receiveShadow = true; seaGroup.add(m2);
+    // hangar-bay openings behind the deck-edge elevators, and the hull number on both bows
+    for (const [z0, z1] of [[-61, -42], [-26, -7], [60, 79]]) sbox(.4, 6.5, z1 - z0, 0x0d0f10, hwTop((z0 + z1) / 2) + .05, 11, (z0 + z1) / 2);
+    sbox(.4, 6.5, 19, 0x0d0f10, -hwTop(66) - .05, 11, 66);
+    const num = canvasTex(256, 192, (c, w, h) => { c.font = '700 170px "Barlow Condensed", Arial Narrow, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 12; c.strokeStyle = '#1b1d1f'; c.strokeText('71', w / 2, h / 2 + 8); c.fillStyle = '#eef0ee'; c.fillText('71', w / 2, h / 2 + 8); });
+    for (const s of [-1, 1]) {
+      const z = -138, a = Math.atan((hwTop(z + 2) - hwTop(z - 2)) / 4), m3 = new THREE.Mesh(new THREE.PlaneGeometry(9, 6.75), new THREE.MeshLambertMaterial({ map: num, transparent: true, polygonOffset: true, polygonOffsetFactor: -2 }));
+      m3.position.set(s * (hwTop(z) * .985 + .15), 9.6, z); m3.rotation.y = s * (Math.PI / 2 + a); seaGroup.add(m3);
+    }
+  }
+  // gallery deck and the flight deck slab, with the deck painted on a canvas laid over it in plan
+  const XMIN = -48, XMAX = 36, ZMIN = -168, ZMAX = 167, DK = 6.1;
+  const extr = (P, y0, h, mats) => {
+    const sh = new THREE.Shape(); sh.moveTo(P[0][0], -P[0][1]); for (let i = 1; i < P.length; i++) sh.lineTo(P[i][0], -P[i][1]);
+    const g = new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false }).rotateX(-Math.PI / 2).translate(0, y0, 0);
+    const p = g.attributes.position, uv = g.attributes.uv; for (let i = 0; i < p.count; i++) uv.setXY(i, (p.getX(i) - XMIN) / (XMAX - XMIN), 1 - (p.getZ(i) - ZMIN) / (ZMAX - ZMIN));
+    const m = new THREE.Mesh(g, mats); m.castShadow = m.receiveShadow = true; seaGroup.add(m); return m;
+  };
+  extr(GAL_OUT, 14.5, 2.9, smat(0x7b8287));
+  const deckTex = (() => {
+    const W = Math.round((XMAX - XMIN) * DK), Hh = Math.round((ZMAX - ZMIN) * DK), cv = document.createElement('canvas'); cv.width = W; cv.height = Hh;
+    const g = cv.getContext('2d'), X = x => (x - XMIN) * DK, Z = z => (z - ZMIN) * DK, P = (u, v) => [X(ldX(u, v)), Z(ldZ(u, v))];
+    let s = 71; const r = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+    g.fillStyle = '#3b3e41'; g.fillRect(0, 0, W, Hh);
+    g.save(); g.beginPath(); DECK_OUT.forEach(([x, z], i) => i ? g.lineTo(X(x), Z(z)) : g.moveTo(X(x), Z(z))); g.closePath(); g.clip();
+    for (let i = 0; i < 26000; i++) { g.fillStyle = r() < .5 ? `rgba(255,255,255,${.02 + r() * .04})` : `rgba(0,0,0,${.03 + r() * .05})`; g.fillRect(r() * W, r() * Hh, 1 + r() * 2.5, 1 + r() * 2.5); }
+    // tyre rubber down the landing area and exhaust soot behind the catapults
+    g.save(); g.translate(...P(0, 0)); g.rotate(-ANG);
+    for (let i = 0; i < 900; i++) { const v = (r() - .5) * 2 * (r() < .7 ? 4 : 9), u0 = 20 + r() * 110, l = (8 + r() * 45) * DK; g.strokeStyle = `rgba(10,10,10,${.05 + r() * .09})`; g.lineWidth = (.25 + r() * .35) * DK; g.beginPath(); g.moveTo(v * DK, -u0 * DK); g.lineTo((v + (r() - .5)) * DK, -u0 * DK - l); g.stroke(); }
+    g.restore();
+    for (const [cx, cz] of [[CAT1.x, -56], [-7, -56], [ldX(128, -4), ldZ(128, -4)], [ldX(128, -12), ldZ(128, -12)]]) for (let i = 0; i < 120; i++) { const a = r() * 6.28, d = r() * 7; g.fillStyle = `rgba(15,14,13,${.04 + r() * .06})`; g.beginPath(); g.arc(X(cx + Math.cos(a) * d * .8), Z(cz + 6 + Math.abs(Math.sin(a)) * d * 1.6), (1 + r() * 2.5) * DK, 0, 7); g.fill(); }
+    const line = (pts, w, c, dash) => { g.strokeStyle = c; g.lineWidth = w * DK; g.setLineDash(dash ? dash.map(d => d * DK) : []); g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(...p) : g.moveTo(...p)); g.stroke(); g.setLineDash([]); };
+    // landing area: solid white port edge, red-and-white foul line to starboard, dashed white centreline, ramp line
+    line([P(0, -12), P(216, -12)], .45, '#e6e6e0');
+    line([P(0, 12), P(216, 12)], .45, '#e6e6e0', [3, 3]); line([P(3, 12), P(216, 12)], .45, '#c8322a', [3, 3]);
+    line([P(4, 0), P(214, 0)], .35, '#e6e6e0', [3.5, 3.5]);
+    line([P(1.2, -12), P(1.2, 12)], .5, '#e6e6e0');
+    for (const u of WIRES) { line([P(u, -WIRE_HW), P(u, WIRE_HW)], .55, '#25272a'); for (const v of [-WIRE_HW, WIRE_HW]) { g.fillStyle = '#d2b43a'; g.beginPath(); g.arc(...P(u, v), .9 * DK, 0, 7); g.fill(); } }
+    // landing-area threshold chevrons for the straight-deck line, and the deck-edge lines
+    line([[X(AXIAL_X), Z(158)], [X(AXIAL_X), Z(-150)]], .3, 'rgba(230,230,224,.55)', [2, 6]);
+    g.strokeStyle = 'rgba(232,232,226,.8)'; g.lineWidth = .3 * DK; g.beginPath(); DECK_OUT.forEach(([x, z], i) => i ? g.lineTo(X(x), Z(z)) : g.moveTo(X(x), Z(z))); g.closePath(); g.stroke();
+    // catapults: the shuttle slot down the middle of each track, the track cover plates, and the jet blast deflector panels
+    const cat = (x0, z0, x1, z1) => { line([[X(x0), Z(z0)], [X(x1), Z(z1)]], 1.4, 'rgba(120,124,128,.45)'); line([[X(x0), Z(z0)], [X(x1), Z(z1)]], .22, '#101112'); line([[X(x0), Z(z0 + 3)], [X(x0), Z(z0 + 14)]], .35, '#d2b43a'); };
+    cat(CAT1.x, CAT1.z0, CAT1.x, CAT1.z0 - CAT1.len); cat(-7, -70, -7, -164);
+    { const a = ldX(122, -4), b = ldZ(122, -4), c = ldX(212, -4), d = ldZ(212, -4); line([[X(a), Z(b)], [X(c), Z(d)]], 1.4, 'rgba(120,124,128,.45)'); line([[X(a), Z(b)], [X(c), Z(d)]], .22, '#101112'); }
+    { const a = ldX(122, -13), b = ldZ(122, -13), c = ldX(212, -13), d = ldZ(212, -13); line([[X(a), Z(b)], [X(c), Z(d)]], 1.4, 'rgba(120,124,128,.45)'); line([[X(a), Z(b)], [X(c), Z(d)]], .22, '#101112'); }
+    for (const x of [CAT1.x, -7]) { g.strokeStyle = '#d2b43a'; g.lineWidth = .3 * DK; g.strokeRect(X(x - 7.5), Z(-56), 15 * DK, 4.3 * DK); for (let k = 1; k < 4; k++) line([[X(x - 7.5 + k * 3.75), Z(-56)], [X(x - 7.5 + k * 3.75), Z(-51.7)]], .15, '#d2b43a'); }
+    // elevators, taxi lines and the hull number on the bow
+    g.strokeStyle = 'rgba(230,226,190,.75)'; g.lineWidth = .28 * DK; g.setLineDash([1.5 * DK, 1.2 * DK]);
+    for (const [z0, z1] of [[-62, -41], [-27, -6], [59, 80]]) g.strokeRect(X(17), Z(z0), 16 * DK, (z1 - z0) * DK);
+    g.beginPath(); g.moveTo(X(xEdge(56)), Z(56)); g.lineTo(X(xEdge(56) + 16), Z(56)); g.lineTo(X(xEdge(77) + 16), Z(77)); g.lineTo(X(xEdge(77)), Z(77)); g.closePath(); g.stroke(); g.setLineDash([]);
+    line([[X(0), Z(-160)], [X(0), Z(-80)], [X(10), Z(-40)], [X(14), Z(10)], [X(16), Z(100)]], .3, '#d2b43a');
+    line([[X(CAT1.x), Z(-40)], [X(CAT1.x), Z(-70)]], .3, '#d2b43a');
+    g.save(); g.translate(X(0), Z(-135)); g.rotate(Math.PI); g.font = `700 ${16 * DK}px "Barlow Condensed", Arial Narrow, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = 'rgba(236,236,230,.9)'; g.fillText('71', 0, 0); g.restore();
+    g.restore();
+    const t = new THREE.CanvasTexture(cv); t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t;
+  })();
+  extr(DECK_OUT, DECK - 1.6, 1.6, [new THREE.MeshLambertMaterial({ map: deckTex }), smat(0x6f767b)]);
+  // island: three stepped blocks, the navigation bridge forward and Pri-Fly aft, the hull number, the mast and its radars
+  {
+    const I = new THREE.Group(); seaGroup.add(I); const gm = smat(HAZE_GREY), win = smat(0x14181b, .05);
+    sbox(6.5, 11, 36, 0, 28.75, DECK + 5.5, 32, I, gm);
+    sbox(5.8, 6, 32, 0, 28.8, DECK + 14, 31, I, gm);
+    sbox(7.2, 3.2, 16, 0, 28.75, DECK + 18.6, 23, I, gm);  sbox(7.25, .9, 16.05, 0, 28.75, DECK + 19, 23, I, win);       // bridge
+    sbox(6.6, 3.4, 9, 0, 28.6, DECK + 18.7, 44, I, gm);     sbox(6.65, 1.1, 9.05, 0, 28.6, DECK + 19.2, 44, I, win);       // Pri-Fly
+    sbox(6.55, .7, 36.05, 0, 28.75, DECK + 9.6, 32, I, win); sbox(5.85, .6, 32.05, 0, 28.8, DECK + 15.4, 31, I, win);
+    sbox(5, 3, 22, 0, 28.75, DECK + 21.5, 31, I, gm);
+    // a door and ladders on the deck-side face, and the big hull number
+    sbox(.1, 2.1, 1.3, 0x3a3f43, 25.45, DECK + 1.05, 20); sbox(.1, 2.1, 1.3, 0x3a3f43, 25.45, DECK + 1.05, 45);
+    const num = canvasTex(256, 192, (c, w, h) => { c.font = '700 170px "Barlow Condensed", Arial Narrow, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 10; c.strokeStyle = '#1b1d1f'; c.strokeText('71', w / 2, h / 2 + 8); c.fillStyle = '#eef0ee'; c.fillText('71', w / 2, h / 2 + 8); });
+    for (const s of [-1, 1]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(10, 7.5), new THREE.MeshLambertMaterial({ map: num, transparent: true })); m.position.set(28.75 + s * 3.27, DECK + 5.5, 32); m.rotation.y = s * Math.PI / 2; I.add(m); }
+    // mast: a tapered tower with platforms, the SPS-48 planar array, a rotating SPS-49 and radomes
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(.9, 1.8, 16, 4).rotateY(Math.PI / 4), gm); mast.position.set(28.75, DECK + 31, 31); mast.castShadow = true; I.add(mast);
+    sbox(4.4, .3, 4.4, 0, 28.75, DECK + 27, 31, I, gm); sbox(3.2, .3, 3.2, 0, 28.75, DECK + 33, 31, I, gm);
+    sbox(9, .25, .25, 0, 28.75, DECK + 36.5, 31, I, gm);
+    const a48 = sbox(4.6, 4.6, .35, 0, 28.75, DECK + 30, 34.2, I, smat(0x6c7277)); a48.rotation.x = -.3;
+    SEA.radar = new THREE.Group(); SEA.radar.position.set(28.75, DECK + 24.6, 20); I.add(SEA.radar);
+    sbox(.4, 1.2, .4, 0, 0, -.6, 0, SEA.radar, gm);
+    { const m = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 2.2, 16, 1, true, -.6, 1.2).rotateZ(Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x5d6368, side: THREE.DoubleSide, transparent: true, opacity: .85 })); m.position.z = 3.5; SEA.radar.add(m); }
+    sbox(1.6, 1.4, 3.5, 0, 28.75, DECK + 23.7, 20, I, gm);
+    for (const [x, y, z, r] of [[27.4, DECK + 23.6, 38, .9], [30.1, DECK + 23.6, 38, .9], [28.75, DECK + 38, 31, .6]]) { const d = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), smat(0xd8dcdc)); d.position.set(x, y, z); I.add(d); }
+    I.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  }
+  // the LSO platform on the port quarter, with its windbreak
+  { const x = ldX(LSO.u, LSO.v), z = ldZ(LSO.u, LSO.v); sbox(6, .3, 8, 0x50565a, x - 1.5, DECK - .2, z); const w = sbox(.2, 1.4, 8, 0x50565a, x + 1.5, DECK + .55, z); w.rotation.y = ANG; }
+  // arresting gear: four cross-deck pendants on their bow springs, each in two halves so an engaged wire can pull into a V
+  {
+    const wm = new THREE.MeshLambertMaterial({ color: 0x1b1c1d }), geo = new THREE.CylinderGeometry(.03, .03, 1, 5).rotateX(Math.PI / 2);
+    for (const u of WIRES) {
+      const L = new THREE.Vector3(ldX(u, -WIRE_HW), DECK + .07, ldZ(u, -WIRE_HW)), R = new THREE.Vector3(ldX(u, WIRE_HW), DECK + .07, ldZ(u, WIRE_HW));
+      const a = new THREE.Mesh(geo, wm), b = new THREE.Mesh(geo, wm); seaGroup.add(a, b);
+      SEA.wires.push({ u, L, R, a, b });
+      for (const v of [-WIRE_HW, WIRE_HW]) sbox(.5, .1, .35, 0x6e6a5a, ldX(u, v), DECK + .05, ldZ(u, v));
+    }
+  }
+  // the Fresnel lens: housing, green datum bars either side, the amber ball moving on the cell stack, red wave-off lights
+  {
+    const x = ldX(LENS.u, LENS.v), z = ldZ(LENS.u, LENS.v);
+    SEA.lens = new THREE.Group(); SEA.lens.position.set(x, LENS.y, z); SEA.lens.rotation.y = -ANG; seaGroup.add(SEA.lens);
+    sbox(4, .5, 3, 0x50565a, x - 1, DECK - .1, z);
+    sbox(1.2, 3.4, .6, 0x25282b, 0, 0, 0, SEA.lens); sbox(.25, 1.3, .25, 0x50565a, 0, -1.9, 0, SEA.lens);
+    sbox(6.6, .25, .3, 0x30343a, 0, 0, 0, SEA.lens);
+    const gT = glowTex(60, 255, 90), aT = glowTex(255, 170, 40), rT = glowTex(255, 40, 30);
+    for (const s of [-1, 1]) for (let k = 0; k < 5; k++) { const l = seaLight(gT, .45); SEA.datum.push({ l, x: s * (.95 + k * .55), y: 0 }); }
+    for (const s of [-1, 1]) for (let k = 0; k < 4; k++) { const l = seaLight(rT, .5); SEA.waveoff.push({ l, x: s * .8, y: -1.2 + k * .8 }); }
+    SEA.ball = seaLight(aT, .6); SEA.ballR = seaLight(rT, .6);
+  }
+  // jet blast deflector behind catapult 1, raised only while a jet is on the cat, and the catapult shuttle
+  { SEA.jbd = new THREE.Group(); SEA.jbd.position.set(CAT1.x, DECK, -51.7); seaGroup.add(SEA.jbd);
+    for (let k = 0; k < 4; k++) { const p = new THREE.Group(); p.position.x = -5.6 + k * 3.75; SEA.jbd.add(p); sbox(3.6, 4.3, .25, 0x6b7176, 0, 2.15, 0, p); p.rotation.x = 0; SEA.jbd.userData[k] = p; }
+    SEA.shuttle = sbox(.5, .25, 1.2, 0x2a2b2c, CAT1.x, DECK + .1, CAT1.z0); }
+  // a few Tomcats parked with their wings in oversweep: along the starboard side forward of the island, and aft by elevator 3
+  if (models.f14) for (const [x, z, h] of [[24.5, -40, 270], [24.5, -21, 270], [23, -2, 270], [24, 64, 270], [24, 83, 270], [23, 101, 270]]) {
+    const c = models.f14.root.clone(true); c.visible = true; c.position.set(x, DECK + 2.32, z); c.rotation.y = -h * D2R;
+    for (const n of ['wingL', 'wingR']) { const w = c.getObjectByName(n); if (w) w.rotation.y = -55 * D2R; }
+    for (const n of ['abL', 'abR', 'crew']) { const a = c.getObjectByName(n); if (a) a.visible = false; }
+    seaGroup.add(c); SEA.parked.push(c); seaObs.push({ x, z, r: 6, h: 5, msg: 'Hit a parked Tomcat' });
+  }
+}
+// once a frame at sea: the sea slides aft, the lens shows the ball for wherever the camera is, the wires and JBD follow the jet
+const _le = new V3(), _lc = new V3(), _hk = new V3();
+let seaT = 0, lsoT = 0, lsoMsg = '', wavingOff = false;
+function updateCarrier(dt) {
+  seaT += dt;
+  seaWater.position.set(Math.round(camera.position.x / SEA_TILE) * SEA_TILE, 0, Math.round(camera.position.z / SEA_TILE) * SEA_TILE);
+  seaTex.offset.y = (seaT * SHIP_V / SEA_TILE) % 1;
+  wakeMat.uniforms.uT.value = (seaT * SHIP_V) % 3700;
+  if (SEA.radar) SEA.radar.rotation.y = seaT * 1.26;
+  // ball: the angle of the camera above the lens, along the approach, against the 3.5° glideslope; ±0.75° fills the stack
+  _lc.copy(camera.position);
+  const du = LENS.u - ldU(_lc.x, _lc.z), dev = (Math.atan2(_lc.y - LENS.y, du) - GS) * R2D, lensW = SEA.lens.position;
+  const place = (l, x, y) => { l.position.set(lensW.x + x * Math.cos(ANG), lensW.y + y, lensW.z - x * Math.sin(ANG)); };
+  const by = clamp(dev / .75, -1.25, 1.25) * 1.4, show = du > 0 && dev < .95, low = dev < -.6;
+  place(SEA.ball, 0, by); place(SEA.ballR, 0, by); SEA.ball.visible = show && !low; SEA.ballR.visible = show && low;
+  for (const d of SEA.datum) place(d.l, d.x, d.y);
+  const flash = wavingOff && (seaT * 3) % 1 < .6;
+  for (const w of SEA.waveoff) { place(w.l, w.x, w.y); w.l.visible = flash; }
+  // lights keep a minimum size on screen, so the lens can be seen from a mile out, as the real one can
+  for (const l of SEA.lights) { const d = l.position.distanceTo(camera.position); l.scale.setScalar(Math.max(l.userData.size, d * .0042)); }
+  // wires: an engaged pendant pulls into a V behind the hook
+  for (let i = 0; i < SEA.wires.length; i++) {
+    const w = SEA.wires[i], tr = ac.trap && ac.trap.wire === i;
+    const M = tr ? ac.trap.H : _le.copy(w.L).add(w.R).multiplyScalar(.5);
+    segTo(w.a, w.L, M); segTo(w.b, M, w.R);
+  }
+  // catapult: the deflector stands up behind a jet on the cat, the shuttle runs with the launch bar
+  const up = ac.cat && ac.cat.st !== 'off' ? 1 : ac.cat && ac.cat.st === 'off' && seaT - ac.cat.tOff < 4 ? 1 : 0;
+  SEA.jbd.userData.k = approach(SEA.jbd.userData.k || 0, up, .5, dt);
+  for (let k = 0; k < 4; k++) SEA.jbd.userData[k].rotation.x = -SEA.jbd.userData.k * 55 * D2R;
+  SEA.shuttle.position.z = ac.cat && ac.cat.st === 'stroke' ? ac.pos.z + T.noseZ : ac.cat && ac.cat.st === 'off' ? Math.min(CAT1.z0, SEA.shuttle.position.z + dt * 6) : CAT1.z0;
+  if (state === 'flying') lsoCalls(dt);
+}
+function segTo(m, A, B) { m.position.copy(A).add(B).multiplyScalar(.5); m.scale.set(1, 1, Math.max(.01, A.distanceTo(B))); m.lookAt(B); }
+// the landing signal officer, talking you down the last mile
+let lsoPass = null;
+function lsoCalls(dt) {
+  wavingOff = false;
+  if (!T.hook || ac.crashed || ac.onGround || ac.trap) { if (ac.onGround) lsoPass = null; return; }
+  const e = _le.set(...T.eye).applyQuaternion(ac.q).add(ac.pos), u = ldU(e.x, e.z), v = ldV(e.x, e.z);
+  const closing = ac.vel.x * LDx + ac.vel.z * LDz > 5;
+  if (u > 40 || u < -2400 || Math.abs(v) > 300 || !closing) { if (u < -2400 || Math.abs(v) > 300) lsoPass = null; return; }
+  const dev = (Math.atan2(e.y - LENS.y, LENS.u - u) - GS) * R2D, units = ac.alpha * R2D * 1.41;
+  if (!lsoPass) lsoPass = { ball: false, t: 0 };
+  lsoT -= dt;
+  if (!lsoPass.ball && u > -1450) { lsoPass.ball = true; lsoPass.t = 1.4; toast('Tomcat, ¾ mile, call the ball · “Tomcat ball, 4.2” · Paddles: Roger ball, 27 knots axial', 3200); lsoT = 3.4; return; }
+  const close = u > -520, waveoff = close && (dev < -.8 || Math.abs(v) > 14 || ac.gearPos < .99 || !ac.hook) || (u > -60 && dev < -.55);
+  if (waveoff) { wavingOff = true; if (lsoT <= 0) { toast('Wave off! Wave off! · full power, climb straight ahead', 1900); lsoT = 2; } return; }
+  if (lsoT > 0 || u < -1450) return;
+  let msg = '';
+  if (dev < -.55) msg = 'Power! Power!'; else if (dev < -.3) msg = 'A little power';
+  else if (dev > .55) msg = 'You’re high'; else if (dev > .32) msg = 'Easy with it';
+  else if (v > 4) msg = 'Right for lineup · come left'; else if (v < -4) msg = 'Come right for lineup';
+  else if (units > 17) msg = 'You’re slow · a little nose down'; else if (units < 13) msg = 'You’re fast · a little nose up';
+  if (msg && msg !== lsoMsg) { toast(msg, 1500); lsoT = 1.7; } else if (msg) { toast(msg, 1300); lsoT = 2.4; }
+  lsoMsg = msg;
 }
 
 /* ---------- live instruments ---------- */
@@ -2056,6 +2761,23 @@ function drawPanel(id) {
         needle(g, cx, cy, r, engAngle(f), .84, r * .1); break;
       }
       case 'flapInd': { const d = T.flaps[ac.flaps].deg, yy = cy + (d / T.flaps[T.flaps.length - 1].deg * .05 - .015) * PX; g.fillStyle = '#f2f2ea'; g.beginPath(); g.moveTo(cx - .018 * PX, yy); g.lineTo(cx - .008 * PX, yy - .005 * PX); g.lineTo(cx - .008 * PX, yy + .005 * PX); g.fill(); break; }
+      case 'aoaU': needle(g, cx, cy, r, aoaAngle(ac.onGround && ac.ias < 20 ? 0 : ac.alpha * R2D * 1.41), .86, r * .09); break;
+      case 'asiJ': needle(g, cx, cy, r, asiJAngle(Math.max(40, ac.ias * KT)), .86, r * .09); text(g, cx, cy + r * .32, (ac.mach || 0).toFixed(2).replace(/^0/, ''), r * .17, '#e8e4d4', 'center', 'B612 Mono, monospace'); break;
+      case 'n2': case 'tit14': case 'ff14': case 'noz': {
+        const run = !ac.crashed, sp = (x < .22 ? -1 : 1) * .006, s2 = ac.spool || 0, ab = ac.ab || 0;
+        const f = !run ? 0 : kind === 'n2' ? ac.rpm / 100 + sp : kind === 'tit14' ? .38 + .45 * s2 + .06 * ab + sp : kind === 'ff14' ? .03 + .16 * s2 * s2 + .75 * ab + sp : ab > .03 ? .25 + .7 * ab : .85 - .8 * s2;
+        needle(g, cx, cy, r, engAngle(f), .84, r * .1); break;
+      }
+      case 'fuelJ': needle(g, cx, cy, r, engAngle(.31), .84, r * .1); break;
+      case 'gmeter': { const a = v => -2.4 + (clamp(v, -4, 10) + 4) / 14 * 4.8; needle(g, cx, cy, r, a(ac.gMaxSeen || 1), .8, r * .05, '#9a9a90'); needle(g, cx, cy, r, a(ac.nz || 1), .86, r * .09); break; }
+      case 'sweep': needle(g, cx, cy, r, -2.1 + ((ac.sweep || 20) - 20) / 55 * 4.2, .86, r * .09); break;
+      case 'vdi': drawVDI(g, cx, cy, .2 * PX, .2 * PX, pitch, roll, instr.dg); break;
+      case 'hsd': drawHSD(g, cx, cy, .2 * PX, .17 * PX, instr.dg); break;
+      case 'gearInd': {
+        const gd = ac.gearPos > .99, tr = ac.gearPos > .01 && !gd;
+        for (const [dx, dy] of [[0, -.025], [-.015, .0], [.015, .0]]) { g.fillStyle = gd ? '#e8e6dc' : tr ? '#2a2a2a' : '#141414'; g.beginPath(); g.arc(cx + dx * PX, cy + dy * PX, .008 * PX, 0, 7); g.fill(); if (tr) { g.strokeStyle = '#e8e6dc'; g.lineWidth = 2; for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(cx + (dx - .008 + k * .004) * PX, cy + (dy - .008) * PX); g.lineTo(cx + (dx - .004 + k * .004) * PX, cy + (dy + .008) * PX); g.stroke(); } } }
+        g.fillStyle = ac.hook ? '#ffb02e' : '#2a1d08'; g.fillRect(cx - .02 * PX, cy + .018 * PX, .04 * PX, .018 * PX); text(g, cx, cy + .027 * PX, 'HOOK', .008 * PX, ac.hook ? '#1a1206' : '#5a4a2a'); break;
+      }
     }
   }
   P.tex.needsUpdate = true;
@@ -2082,12 +2804,17 @@ function updateCockpit(dt) {
     for (const y of [C.yoke, C.yoke2]) { y.rotation.z = -inp.ail * .7; y.position.z = -11.4 + inp.elev * .1; }
     C.flap.rotation.x = .35 - ac.flaps * .35;
   }
+  if (T.id === 'f14') {
+    for (const L of C.thr) L.position.z = -5.94 - ac.thr * .2;
+    C.gear.rotation.x = ac.gear ? .5 : -.2; C.hookH.rotation.x = ac.hook ? .5 : -.2;
+  }
   if (T.id === 'c180') { C.thr.position.z = -.7 - ac.thr * .07; C.yoke.rotation.z = -inp.ail * .8; C.yoke.position.z = -.62 + inp.elev * .08; C.trim.rotation.x = ac.trim * 20; C.flap.rotation.x = -T.flaps[ac.flaps].deg * D2R * 1.4; }
   panelT += dt;
   if (panelT > 1 / 30) {
     panelT = 0;
     drawPanel(T.id);
     if (C.comp) drawWhiskey(C.comp, instr.comp);
+    if (C.hud) { drawHUD14(C.hud); drawIndexer(C.aoa); }
   }
   if (lookId === null) { lookYaw *= Math.exp(-dt * 1.6); lookPitch *= Math.exp(-dt * 1.6); }
 }
@@ -2103,15 +2830,17 @@ const endLook = e => { if (e.pointerId === lookId) lookId = null; };
 canvas.addEventListener('pointerup', endLook); canvas.addEventListener('pointercancel', endLook);
 
 /* ---------- weather: wind ---------- */
-const WINDS = { none: { from: 0, kt: 0, gust: 0, turb: 0 }, calm: { from: 200, kt: 0, gust: 0, turb: .15 }, light: { from: 200, kt: 6, gust: 1.5, turb: .45 }, gusty: { from: 220, kt: 12, gust: 6, turb: 1.1 } };
+const WINDS = { none: { from: 0, kt: 0, gust: 0, turb: 0 }, sea: { from: 351, kt: 27, gust: 2, turb: .35 }, calm: { from: 200, kt: 0, gust: 0, turb: .15 }, light: { from: 200, kt: 6, gust: 1.5, turb: .45 }, gusty: { from: 220, kt: 12, gust: 6, turb: 1.1 } };
 let simT = 0;
 const _w = new V3();
 // the air's velocity at a given height above the ground: slower near the ground and in the tree-sheltered strip, with gusts
+// at sea most of the wind over the deck is the ship's own speed, which does not fade toward the water
+const windCfg = () => WINDS[onMoon ? 'none' : atSea ? 'sea' : settings.wind] || WINDS.calm;
 function windVec(agl) {
-  const W = WINDS[onMoon ? 'none' : settings.wind] || WINDS.calm;
+  const W = windCfg();
   const n1 = vnoise(simT * .23, 3.3) * 2 - 1, n2 = vnoise(simT * .11 + 40, 7.1) * 2 - 1;
-  const spd = Math.max(0, W.kt / KT + W.gust / KT * Math.max(-.4, n1)) * (.45 + .55 * sstep(0, 70, agl)) * (inClearing(rwU(ac.pos.x, ac.pos.z), rwV(ac.pos.x, ac.pos.z)) && agl < 18 ? .75 : 1);
-  const from = (W.from + n2 * 9) * D2R;
+  const spd = Math.max(0, W.kt / KT + W.gust / KT * Math.max(-.4, n1)) * (atSea ? 1 : (.45 + .55 * sstep(0, 70, agl)) * (inClearing(rwU(ac.pos.x, ac.pos.z), rwV(ac.pos.x, ac.pos.z)) && agl < 18 ? .75 : 1));
+  const from = (W.from + n2 * (atSea ? 1.5 : 9)) * D2R;
   return _w.set(-Math.sin(from) * spd, 0, Math.cos(from) * spd);
 }
 
@@ -2133,7 +2862,21 @@ function liftCoef(a, fl) {
 function engine(V, alt, thr, dt) {
   const e = T.eng, pAmb = 29.92 * Math.exp(-alt / 8434), sig = Math.exp(-alt / 9000);
   let thrust, rpmT;
-  if (e.turbo) {
+  if (e.jet) {
+    // two TF30s: the lever runs idle to military power over its first 80%, then the afterburners. The core spools up
+    // slowly (about three and a half seconds from idle to military), and the burner lights only once the core is there.
+    // dt = 0 asks for the steady state at that lever, for the trim solver.
+    ac.mp = pAmb;
+    const coreT = Math.min(thr / .8, 1), abT = thr > .82 ? (thr - .82) / .18 : 0;
+    if (dt) {
+      ac.spool = approach(ac.spool || 0, coreT, coreT > (ac.spool || 0) ? .12 + .45 * (ac.spool || 0) : .55, dt);
+      ac.ab = approach(ac.ab || 0, ac.spool > .95 ? abT : 0, 1.4, dt);
+    }
+    const sp = dt ? ac.spool : coreT, ab = dt ? ac.ab : abT, mach = V / sos(alt);
+    thrust = (e.Tmil * (.035 + .965 * Math.pow(sp, 2.2)) + ab * (e.Tab - e.Tmil)) * Math.pow(sig, .75) * (1 + .2 * mach * mach);
+    if (dt) ac.rpm = e.idle + (e.gov - e.idle) * sp + 2 * ab;
+    return thrust;
+  } else if (e.turbo) {
     // four T56s at constant prop speed: power lever sets fuel flow and blade angle, so thrust follows the lever at once.
     // Static thrust is capped by the props; above that it is shaft power over speed. Flight idle gives flat-pitch drag.
     ac.mp = pAmb;
@@ -2157,7 +2900,8 @@ function engine(V, alt, thr, dt) {
   if (dt) ac.rpm += (rpmT - ac.rpm) * Math.min(1, dt * 2.5);
   return thrust;
 }
-function surfaceMu(x, z) { const u = rwU(x, z), v = rwV(x, z); if (Math.abs(u) < RW_LEN / 2 + 5 && Math.abs(v) < RW_W / 2 + 1) return T.muRoll; const c = cover(x, z); return c === 3 || c === 4 ? T.muRoll * 1.35 : c === 1 || c === 2 ? T.muRoll * 2 : .16; }
+const sos = alt => 340.3 - .0039 * Math.min(alt, 11000);   // speed of sound, m/s
+function surfaceMu(x, z) { if (atSea) return T.muRoll; const u = rwU(x, z), v = rwV(x, z); if (Math.abs(u) < RW_LEN / 2 + 5 && Math.abs(v) < RW_W / 2 + 1) return T.muRoll; const c = cover(x, z); return c === 3 || c === 4 ? T.muRoll * 1.35 : c === 1 || c === 2 ? T.muRoll * 2 : .16; }
 let stepN = 0;
 function step(dt) {
   if (ac.crashed) return;
@@ -2165,17 +2909,25 @@ function step(dt) {
   const q = ac.q, w = ac.w, t = T;
   _qi.copy(q).invert();
   const gh0 = groundHeight(ac.pos.x, ac.pos.z), agl = ac.pos.y - gh0;
-  const W = windVec(agl), tb = (WINDS[onMoon ? 'none' : settings.wind] || WINDS.calm).turb * (wx.turb || 1) * sstep(2, 40, agl) * (1 - sstep(900, 1500, agl));
+  const W = windVec(agl), tb = windCfg().turb * (wx.turb || 1) * sstep(2, 40, agl) * (1 - sstep(900, 1500, agl));
   _air.copy(ac.vel).sub(W);
   if (tb) { _air.x -= tb * (vnoise(simT * .9, ac.pos.z * .01) - .5) * 1.4; _air.y -= tb * ((vnoise(ac.pos.x * .006 + simT * .5, ac.pos.z * .006) - .5) * 1.6 + (vnoise(ac.pos.x / 400, ac.pos.z / 400) - .5) * 1.2); _air.z -= tb * (vnoise(ac.pos.x * .01, simT * .8) - .5) * 1.4; }
   _vb.copy(_air).applyQuaternion(_qi);
   const V = _vb.length(), alt = Math.max(0, ac.pos.y), rho = 1.225 * Math.exp(-alt / 9000), sig = rho / 1.225, qbar = .5 * rho * V * V;
   let alpha = 0, beta = 0;
   if (V > .5) { alpha = Math.atan2(-_vb.y, -_vb.z); beta = Math.asin(clamp(_vb.x / V, -1, 1)); }
+  const mach = V / sos(alt); ac.mach = mach;
+  if (t.sweep) {
+    // CADC sweep schedule: 20° up to about Mach 0.4, all the way back to 68° by 0.9; flaps down hold it at 20°
+    ac.sweep = approach(ac.sweep || 20, ac.flaps || ac.onGround ? 20 : 20 + 48 * sstep(.5, .95, mach), 7.5, dt);
+    sweepState(t);
+  }
   const thrust = engine(V, alt, ac.thr, dt); ac.thrust = thrust;
   const fl = t.flaps[ac.flaps], cl = liftCoef(alpha, fl), stalled = alpha > t.stallA - fl.deg * .0012 + .02;
   const hw = Math.max(.3, agl + .8), ge = (16 * hw / t.span) ** 2, phi = ge / (1 + ge);
-  const cd = t.cd0 + t.ki * phi * cl * cl + fl.cd + (stalled ? .1 : 0);
+  let cd = t.cd0 + t.ki * phi * cl * cl + fl.cd + (stalled ? .1 : 0);
+  if (t.retract) cd += .02 * ac.gearPos;
+  if (t.sweep) { const sf = (ac.sweep - 20) / 48, mc = .74 + .1 * sf; cd += .035 * sstep(mc, 1.05, mach) * (1 - .25 * sstep(1.2, 2, mach)) * (1.3 - .5 * sf); }
   _F.set(0, 0, 0);
   if (V > .5) {
     const vx = _vb.x / V, vy = _vb.y / V, vz = _vb.z / V, qs = qbar * t.S;
@@ -2189,11 +2941,13 @@ function step(dt) {
   _F.y -= t.mass * G;
   // gear: each wheel is a spring-damper with tyre friction
   _tq.set(0, 0, 0); _ww.copy(w).applyQuaternion(q); let contacts = 0, mainC = 0, impact = 0;
-  const steerA = inp.rud * t.steer * D2R;
+  const steerA = inp.rud * t.steer * D2R / (t.steerV ? 1 + Math.hypot(ac.vel.x, ac.vel.z) / t.steerV : 1);
   for (const wh of t.wheels) {
+    if (t.retract && ac.gearPos < .98) { wh.was = false; wh.comp = 0; continue; }
     _r.copy(wh.p).applyQuaternion(q); _P.copy(ac.pos).add(_r);
     const gh = groundHeight(_P.x, _P.z), pen = gh - _P.y;
     if (pen <= 0) { wh.was = false; wh.comp = 0; continue; }
+    if (atSea && pen > 1.2) return crash(_P.z > 150 ? 'Ramp strike' : gh > 1 ? 'Hit the side of the ship' : 'Went into the water');
     const n = groundNormal(_P.x, _P.z);
     _vp.copy(_ww).cross(_r).add(ac.vel);
     const vn = _vp.dot(n);
@@ -2213,50 +2967,135 @@ function step(dt) {
     _tmp.copy(_fc).applyQuaternion(_qi); ac.fs.add(_tmp);
     if (wh.main && pondAt(_P.x, _P.z)) return crash('Rolled into a stock pond');
   }
+  if (atSea && (ac.cat || ac.trap)) carrierForces(q, thrust, dt);
   ac.fs.multiplyScalar(1 / t.mass);
   ac.vel.addScaledVector(_F, dt / t.mass);
   ac.pos.addScaledVector(ac.vel, dt);
   // rotation: aerodynamic angular accelerations plus gear torques over inertia
   const f = qbar / t.qRef, vr = V / t.vRef, fc = f + t.slip * Math.max(0, thrust) / t.eng.Ts;
   _tb.copy(_tq).applyQuaternion(_qi);
-  let ax = f * t.kA * (t.a0 + fl.da - alpha) + fc * t.kA * t.kE * (inp.elev + ac.trim) - (3.2 * vr + .6) * w.x + _tb.x / t.I[0];
+  // the Tomcat has no g limiter, but a pilot flies to the 6.5 g limit, so the stick asks for no more lift than that
+  let elev = inp.elev;
+  if (t.gMax && V > 20 && fc > 1e-3) { const ag = (t.gMax * t.mass * G / (qbar * t.S) - t.cl0 - fl.cl) / t.k, an = (-3 * t.mass * G / (qbar * t.S) - t.cl0 - fl.cl) / t.k, dq = (3.2 * vr + .6) * G / (V * f * t.kA);
+    elev = clamp(elev, (an - t.a0 - fl.da - 4 * dq) * f / (fc * t.kE) - ac.trim, Math.max(-1, (ag - t.a0 - fl.da + (t.gMax - 1) * dq) * f / (fc * t.kE) - ac.trim)); }
+  let ax = f * t.kA * (t.a0 + fl.da - alpha) + fc * t.kA * t.kE * (elev + ac.trim) - (3.2 * vr + .6) * w.x + _tb.x / t.I[0];
   let ay = fc * -t.yaw * inp.rud + f * (-3.2 * beta + .25 * inp.ail) - (2.2 * vr + .6) * w.y + _tb.y / t.I[1];
   ay += t.pfac * Math.max(0, thrust) / t.eng.Ts * (.3 + .7 * (1 - sstep(8, 40, V))) + t.gyro * -w.x * ac.rpm / 2700;
-  let az = f * (-t.roll * inp.ail + .8 * beta) - (t.rollD * vr + .6) * w.z + _tb.z / t.I[2];
+  const fr = t.rollQ ? f / (1 + f / t.rollQ) * (1 - .35 * ((ac.sweep || 20) - 20) / 48) : f;   // roll authority levels off at high speed
+  let az = -fr * t.roll * inp.ail + f * .8 * beta - (t.rollD * vr + .6) * w.z + _tb.z / t.I[2];
   if (stalled && contacts === 0) { if (!ac.stalled) ac.stallSide = Math.random() < .5 ? -1 : 1; az += f * (1 + 4 * Math.abs(beta)) * ac.stallSide; }
   w.x += ax * dt; w.y += ay * dt; w.z += az * dt;
   const wl = w.length();
   if (wl > 1e-7) { _ax.copy(w).multiplyScalar(1 / wl); _dq.setFromAxisAngle(_ax, wl * dt); q.multiply(_dq).normalize(); }
   ac.stalled = stalled; ac.alpha = alpha; ac.beta = beta; ac.V = V; ac.ias = V * Math.sqrt(sig); ac.contacts = contacts;
+  ac.nz = ac.fs.y / 9.81; if (!contacts) ac.gMaxSeen = Math.max(ac.gMaxSeen || 1, ac.nz);
+  if (t.retract) { ac.gearPos = approach(ac.gearPos, ac.gear, .2, dt); ac.hookPos = approach(ac.hookPos, ac.hook ? 1 : 0, 1.2, dt); }
+  if (atSea) { const c = carrierCheck(dt, mainC); if (c) return crash(c); }
   if (!ac.runT) ac.runT = 0; ac.runT += dt;
   // hard points: the prop arc, wingtips, belly
   if (stepN % 2 === 0 || contacts) {
     _up.set(0, 1, 0).applyQuaternion(q);
     if (contacts && _up.y < .35) return crash('Flipped over');
-    const [px, py, pz, R] = t.prop;
-    for (const s of px ? [-1, 1] : [1]) {
+    const [px, py, pz, R] = t.prop || [0, 0, 0, 0];
+    if (t.prop) for (const s of px ? [-1, 1] : [1]) {
       _tmp.set(0, -1, 0).applyQuaternion(_qi); _tmp.z = 0; _tmp.normalize().multiplyScalar(R); _tmp.x += s * px; _tmp.y += py; _tmp.z = pz;
       _tmp.applyQuaternion(q).add(ac.pos); if (_tmp.y < groundHeight(_tmp.x, _tmp.z) + .02) return crash(ac.rpm > 900 * (t.discK || 1) ? 'Prop strike' : 'Nosed over');
     }
     for (const s of [-1, 1]) { _tmp.set(s * t.tip[0], t.tip[1], t.tip[2]).applyQuaternion(q).add(ac.pos); if (_tmp.y < groundHeight(_tmp.x, _tmp.z)) return crash('Wingtip struck the ground'); }
-    _tmp.set(0, -.35, .2).applyQuaternion(q).add(ac.pos); if (_tmp.y < groundHeight(_tmp.x, _tmp.z) - .05) return crash('Belly hit the ground');
+    _tmp.set(...(t.belly || [0, -.35, .2])).applyQuaternion(q).add(ac.pos); if (_tmp.y < groundHeight(_tmp.x, _tmp.z) - .05) return crash(t.retract && ac.gearPos < .98 ? 'Gear-up landing' : 'Belly hit the ground');
     if (t.tailSkid) { _tmp.set(...t.tailSkid).applyQuaternion(q).add(ac.pos); if (_tmp.y < groundHeight(_tmp.x, _tmp.z)) { if (ac.vel.y < -1.5) return crash('Tail strike'); if (!ac.tailToast) { ac.tailToast = true; toast('Tail strike · careful in the flare', 2200); } } }
   }
   // trees, parked aircraft and buildings
   if (agl < 32 && stepN % 3 === 0 && !window.__rf.noCollide) {
     for (const [x, y, z] of [[0, 0, -1.2], [-t.tip[0] * .9, t.tip[1], 0], [t.tip[0] * .9, t.tip[1], 0], [0, .5, 3]]) { _tmp.set(x, y, z).applyQuaternion(q).add(ac.pos); if (treeHit(_tmp.x, _tmp.y, _tmp.z)) return crash('Flew into the trees'); }
-    if (agl < 9) for (const o of (onMoon ? moonObs : obstacles.concat(parked))) { const d = Math.hypot(ac.pos.x - o.x, ac.pos.z - o.z); if (d < o.r + (t.clearR || t.span * .4) && ac.pos.y - groundHeight(o.x, o.z) < o.h + .5) return crash(parked.includes(o) ? 'Hit a parked airplane' : 'Hit an obstacle'); }
+    if (agl < 9) for (const o of (onMoon ? moonObs : atSea ? seaObs : obstacles.concat(parked))) { const d = Math.hypot(ac.pos.x - o.x, ac.pos.z - o.z); if (d < o.r + (t.clearR || t.span * .4) && ac.pos.y - groundHeight(o.x, o.z) < o.h + .5) return crash(o.msg || (parked.includes(o) ? 'Hit a parked airplane' : 'Hit an obstacle')); }
   }
   if (contacts === 0 && agl < .2 && pondAt(ac.pos.x, ac.pos.z)) return crash('Ditched in a stock pond');
   // touchdown, landing and takeoff bookkeeping
-  if (mainC && ac.airTime > 2) { if (impact > t.sink) return crash(`Hard landing · ${Math.round(impact * FPM)} fpm`); landed(impact); }
+  if (mainC && ac.airTime > (atSea ? .6 : 2)) { if (impact > t.sink) return crash(`Hard landing · ${Math.round(impact * FPM)} fpm`); landed(impact); }
   if (contacts) { ac.airTime = 0; } else ac.airTime += dt;
   ac.onGround = contacts > 0;
   trackRoll();
 }
+// the swing wing: lift slope, maximum lift, induced drag, span and wingtip position follow the sweep angle
+function sweepState(t) {
+  const sf = ((ac.sweep || 20) - 20) / 48, d = (ac.sweep - 20) * D2R;
+  t.k = 4.4 - 1.5 * sf; t.ki = .055 + .1 * sf; t.clmax = 1.6 - .3 * sf; t.stallA = (t.clmax - t.cl0) / t.k; t.span = lerp(19.54, 11.65, sf);
+  t.tip[0] = TC_PIVOT[0] + 7.05 * Math.cos(d) - 1.48 * Math.sin(d); t.tip[2] = TC_PIVOT[2] + 7.05 * Math.sin(d) + 1.48 * Math.cos(d);
+}
+// catapult and arresting wire, as forces on the jet (body-frame contact force added to ac.fs for the g meter)
+const _cw = new V3(), _cl = new V3(), _cr = new V3();
+function carrierForces(q, thrust, dt) {
+  const t = T, c = ac.cat;
+  if (c && c.st === 'hold') {
+    // the holdback: nothing moves until the shot. Two seconds at full power with the engines up, then the cat fires
+    _F.x = -ac.vel.x * t.mass / dt; _F.z = -ac.vel.z * t.mass / dt; ac.w.y = 0;
+    c.t = ac.thr > .78 && ac.spool > .97 ? c.t + dt : 0;
+    if (c.t > 2.1) { c.st = 'stroke'; toast('Salute · shot', 1200); }
+  } else if (c && c.st === 'stroke') {
+    _cw.set(0, 0, -CAT1.a * t.mass); _cw.x = t.mass * (-14 * (ac.pos.x - CAT1.x) - 9 * ac.vel.x);
+    _F.add(_cw); _tmp.copy(_cw).applyQuaternion(_qi); ac.fs.add(_tmp); ac.w.y *= Math.max(0, 1 - 20 * dt);
+    if (c.z0 - ac.pos.z >= CAT1.len) { c.st = 'off'; c.tOff = seaT; toast(`Off the cat at ${Math.round(ac.ias * KT)} knots · gear up, climb away`, 2600); }
+  }
+  const tr = ac.trap;
+  if (tr) {
+    // the pendant pulls toward both deck sheaves; the arresting engine sets a steady pull that stops the jet in its runout
+    const w = SEA.wires[tr.wire];
+    _r.set(...t.hook.p); _r.y -= t.hook.L * Math.sin(t.hook.down * D2R); _r.z += t.hook.L * Math.cos(t.hook.down * D2R); _r.applyQuaternion(q);
+    _cw.copy(ac.pos).add(_r); _cw.y = Math.max(_cw.y, DECK + .05); tr.H.copy(_cw);
+    _cl.subVectors(w.L, _cw).normalize(); _cr.subVectors(w.R, _cw).normalize(); _cl.add(_cr); _cl.y = Math.min(_cl.y, 0); _cl.normalize();
+    const va = ac.vel.x * LDx + ac.vel.z * LDz;
+    tr.t += dt;
+    let Fm = va > .4 ? Math.min(1, tr.t / .15) * (t.mass * tr.a + Math.max(0, thrust)) : Math.max(0, thrust) + t.mass * .6;
+    if (va <= .4 && !tr.stopped) { tr.stopped = true; trapGrade(); }
+    if (tr.stopped && va < -.6) Fm = 0;
+    _fc.copy(_cl).multiplyScalar(Fm); _F.add(_fc); _tq.add(_tmp.copy(_r).cross(_fc)); _tmp.copy(_fc).applyQuaternion(_qi); ac.fs.add(_tmp);
+  }
+}
+// hook engagement, bolters, the island, the hull and the water
+const _hp = new V3(), _hq = new V3();
+function carrierCheck(dt, mainC) {
+  const t = T;
+  if (t.hook && ac.hookPos > .95) {
+    _hp.set(...t.hook.p); _hp.y -= t.hook.L * Math.sin(t.hook.down * D2R); _hp.z += t.hook.L * Math.cos(t.hook.down * D2R); _hp.applyQuaternion(ac.q).add(ac.pos);
+    if (ac.hookPrev && !ac.trap) {
+      const u0 = ldU(ac.hookPrev.x, ac.hookPrev.z), u1 = ldU(_hp.x, _hp.z);
+      for (let i = 0; i < WIRES.length; i++) {
+        const W = WIRES[i]; if (!(u0 < W && u1 >= W)) continue;
+        const k = (W - u0) / (u1 - u0), y = lerp(ac.hookPrev.y, _hp.y, k), v = ldV(lerp(ac.hookPrev.x, _hp.x, k), lerp(ac.hookPrev.z, _hp.z, k));
+        if (Math.abs(v) < WIRE_HW - 1 && y < DECK + .28) {
+          const va = ac.vel.x * LDx + ac.vel.z * LDz;
+          ac.trap = { wire: i, t: 0, a: va * va / (2 * RUNOUT), v0: va, H: _hp.clone(), stopped: false, u: ldU(ac.pos.x, ac.pos.z), fpm: ac.tdFpm || 0, dev: ac.rampDev };
+          toast(`${i + 1}-wire`, 1500);
+          break;
+        }
+      }
+    }
+    (ac.hookPrev || (ac.hookPrev = new V3())).copy(_hp);
+  } else ac.hookPrev = null;
+  // the ball at the ramp, for the grade
+  if (t.hook) { _hq.set(...t.eye).applyQuaternion(ac.q).add(ac.pos); const u = ldU(_hq.x, _hq.z); if (u > -30 && u < 0 && !ac.onGround) ac.rampDev = (Math.atan2(_hq.y - LENS.y, LENS.u - u) - GS) * R2D; }
+  if (t.hook && ac.hook && mainC && !ac.trap && !ac.bolter && ldU(ac.pos.x, ac.pos.z) > WIRES[3] + 8) { ac.bolter = true; toast('Bolter, bolter, bolter · full power, climb, come around again', 3000); }
+  if (!mainC && ac.airTime > 3) ac.bolter = false;
+  if (ac.trap && ac.trap.stopped && !ac.hook) ac.trap = null;
+  // hard points against the island and the ship's sides
+  for (const [x, y, z] of [[0, 0, t.prop ? t.prop[2] : t.noseZ * 1.6], [-t.tip[0], t.tip[1], t.tip[2]], [t.tip[0], t.tip[1], t.tip[2]], [0, 1.5, (t.tailSkid || [0, 0, 4])[2]]]) {
+    _tmp.set(x, y, z).applyQuaternion(ac.q).add(ac.pos);
+    if (inIsland(_tmp.x, _tmp.y, _tmp.z)) return 'Hit the island';
+    if (_tmp.y < DECK - .5 && _tmp.y > 1 && onDeck(_tmp.x, _tmp.z) && (_tmp.y > 14.5 || Math.abs(_tmp.x) < hwTop(_tmp.z))) return _tmp.z > 140 ? 'Ramp strike' : 'Flew into the ship';
+  }
+  if (ac.pos.y < 2.2) return 'Went into the water';
+  return null;
+}
+function trapGrade() {
+  const tr = ac.trap, w = tr.wire + 1, d = ac.trap.dev, ro = Math.round(Math.hypot(ac.pos.x - ldX(tr.u, 0), ac.pos.z - ldZ(tr.u, 0)) * FT / 10) * 10;
+  const g = w === 3 ? (d !== undefined && Math.abs(d) > .4 ? 'Fair' : 'OK') : w === 2 || w === 4 ? 'Fair' : 'No grade · low in close';
+  toast(`Trap · ${w}-wire · ${g} · ${Math.round(tr.v0 * KT)} kt over the deck, stopped in ${ro} ft · idle, H to raise the hook`, 5200);
+}
 function rwyOf() { _f.set(0, 0, -1).applyQuaternion(ac.q); const along = _f.x * RDx + _f.z * RDz; return along > 0 ? '02' : '20'; }
 function onStrip(x, z) { return Math.abs(rwU(x, z)) < RW_LEN / 2 + 3 && Math.abs(rwV(x, z)) < RW_W / 2 + 1.5; }
 function landed(vs) {
+  if (atSea) { ac.tdFpm = Math.round(vs * FPM); if (!T.hook || !ac.hook) toast(`On deck · ${ac.tdFpm} fpm`, 2400); ac.td = { x: ac.pos.x, z: ac.pos.z }; ac.tdAnn = !!T.hook; return; }
   const fpm = Math.round(vs * FPM), k = T.sink / 3.4, v = fpm < 160 * k ? 'Greaser' : fpm < 350 * k ? 'Smooth landing' : fpm < 560 * k ? 'Firm landing' : 'Hard landing';
   const u = rwU(ac.pos.x, ac.pos.z), r = rwyOf(), past = r === '20' ? RW_LEN / 2 - u : u + RW_LEN / 2;
   let where = onStrip(ac.pos.x, ac.pos.z) ? (past > 0 ? ` · ${Math.round(past * FT / 10) * 10} ft past the ${r} threshold` : ` · short of runway ${r}`) : inClearing(u, rwV(ac.pos.x, ac.pos.z)) ? ' · on the grass beside the strip' : ' · off-field landing';
@@ -2265,12 +3104,13 @@ function landed(vs) {
 }
 function trackRoll() {
   const gs = Math.hypot(ac.vel.x, ac.vel.z);
-  if (ac.onGround && !ac.roll0 && gs > 2 && ac.thr > .6) ac.roll0 = { x: ac.pos.x, z: ac.pos.z };
+  if (ac.onGround && !ac.roll0 && gs > 2 && ac.thr > .6 && !ac.cat) ac.roll0 = { x: ac.pos.x, z: ac.pos.z };
   if (ac.onGround && gs < 1.5 && ac.thr < .6) ac.roll0 = null;
   if (!ac.onGround && ac.roll0 && ac.airTime > 1.2) { const d = Math.hypot(ac.pos.x - ac.roll0.x, ac.pos.z - ac.roll0.z) - gs * ac.airTime; toast(`Airborne in ${Math.max(0, Math.round(d * FT / 10) * 10)} ft`, 2600); ac.roll0 = null; ac.td = null; }
-  if (ac.td && !ac.tdAnn && ac.onGround && gs < .8) { ac.tdAnn = true; toast(`Stopped in ${Math.round(Math.hypot(ac.pos.x - ac.td.x, ac.pos.z - ac.td.z) * FT / 10) * 10} ft`, 3000); }
+  if (ac.td && !ac.tdAnn && ac.onGround && gs < .8 && !ac.trap) { ac.tdAnn = true; toast(`Stopped in ${Math.round(Math.hypot(ac.pos.x - ac.td.x, ac.pos.z - ac.td.z) * FT / 10) * 10} ft`, 3000); }
 }
 function crash(reason) {
+  if (atSea && ac.pos.y < DECK - 3 && !/ramp|ship|island/i.test(reason)) reason = 'Went into the water';
   ac.crashed = true; ac.why = reason; ac.vel.set(0, 0, 0); ac.w.set(0, 0, 0); ac.rpm = 0;
   ac.pos.y = Math.max(ac.pos.y, groundHeight(ac.pos.x, ac.pos.z) + .6);
   state = 'crashed'; smokeOn = true; smoke.forEach(s => { s.t = -s.delay; s.mesh.visible = false; });
@@ -2283,7 +3123,7 @@ function crash(reason) {
 function autoTrimTarget(v) {
   const fl = T.flaps[ac.flaps], qS = .5 * 1.225 * v * v * T.S, a = (T.mass * G / qS - T.cl0 - fl.cl) / T.k;
   const tf = Math.max(0, engine(v, ac.pos.y, ac.thr, 0)) / T.eng.Ts, f = .5 * 1.225 * v * v / T.qRef, fc = f + T.slip * tf;
-  return clamp((a - T.a0 - fl.da) * f / fc / T.kE + AT_KP * (ac.ias - v) - AT_KD * (ac.vel.y - vyRef), -T.trimRange, T.trimRange);
+  return clamp((a - T.a0 - fl.da) * f / fc / T.kE + AT_KP * (ac.ias - v) * (T.atHi ? T.vRef / Math.max(v, T.vRef) : 1) - AT_KD * (ac.vel.y - vyRef), -T.trimRange, T.trimRange);
 }
 const AT_KP = .02, AT_KD = .08;
 function solveTrim(v, flaps, gamma) {
@@ -2296,32 +3136,59 @@ function solveTrim(v, flaps, gamma) {
 }
 
 /* ---------- start positions ---------- */
-function windRunway() { const W = WINDS[onMoon ? 'none' : settings.wind]; if (!W || !W.kt) return '20'; const d = ((W.from - 20 + 540) % 360) - 180; return Math.abs(d) < 90 ? '02' : '20'; }
+function windRunway() { const W = windCfg(); if (!W || !W.kt) return '20'; const d = ((W.from - 20 + 540) % 360) - 180; return Math.abs(d) < 90 ? '02' : '20'; }
 function resetCommon() {
   ac.w.set(0, 0, 0); ac.crashed = false; ac.stalled = false; ac.airTime = 0; ac.roll0 = null; ac.td = null; ac.tailToast = false;
   smokeOn = false; smoke.forEach(s => s.mesh.visible = false);
   ks.elev = ks.ail = ks.rud = 0; instr.hdgPrev = null;
   for (const w of T.wheels) { w.was = false; w.comp = 0; }
+  ac.gear = 1; ac.gearPos = 1; ac.hook = false; ac.hookPos = 0; ac.hookPrev = null; ac.sweep = 20; ac.spool = 0; ac.ab = 0; ac.cat = null; ac.trap = null; ac.bolter = false; ac.gMaxSeen = 1; ac.rampDev = undefined; ac.tdFpm = 0;
+  lsoPass = null; if (T.sweep) sweepState(T);
 }
-function placeOnGround(u, v, hdgDeg) {
+function placeOnGround(u, v, hdgDeg, xyz) {
   const th = T.tail ? T.threePt * D2R : 0;
   ac.q.setFromEuler(_eu.set(th, -hdgDeg * D2R, 0, 'YXZ'));
   let low = 0; for (const w of T.wheels) { _r.copy(w.p).applyQuaternion(ac.q); low = Math.min(low, _r.y); }
-  const x = rwX(u, v), z = rwZ(u, v);
+  const x = xyz ? u : rwX(u, v), z = xyz ? v : rwZ(u, v);
   ac.pos.set(x, groundHeight(x, z) - low - .015, z); ac.vel.set(0, 0, 0);
   for (const w of T.wheels) w.was = true;
 }
 function resetRunway() {
   resetCommon();
-  const r = windRunway(), u = r === '20' ? RW_LEN / 2 - 35 : -RW_LEN / 2 + 35;
-  placeOnGround(u, 0, r === '20' ? 200 : 20);
+  if (atSea) {
+    // the Tomcat goes on bow catapult 1, nose gear on the shuttle; everything else lines up at the stern for a deck run
+    if (T.hook) { placeOnGround(CAT1.x, CAT1.z0 - T.noseZ, 0, true); ac.cat = { st: 'hold', t: 0, z0: ac.pos.z }; }
+    else placeOnGround(AXIAL_X, 160 - (T.tail ? T.tailZ : T.tailSkid ? T.tailSkid[2] : 4) - 2, 0, true);
+  } else {
+    const r = windRunway(), u = r === '20' ? RW_LEN / 2 - 35 : -RW_LEN / 2 + 35;
+    placeOnGround(u, 0, r === '20' ? 200 : 20);
+  }
   ac.thr = 0; ac.flaps = T.toFlaps || 0;
-  ac.trim = solveTrim(T.vRef * .78, ac.flaps, 0).trim; ac.onGround = true; ac.rpm = T.eng.idle; ac.runT = 0;
+  ac.trim = solveTrim(T.toV || T.vRef * .78, ac.flaps, 0).trim; ac.onGround = true; ac.rpm = T.eng.idle; ac.runT = 0;
 }
-const APPR = { j3: { v: 25.5, fl: 0 }, c180: { v: 36, fl: 2 }, c130: { v: 53, fl: 2 } };
+const APPR = { j3: { v: 25.5, fl: 0 }, c180: { v: 36, fl: 2 }, c130: { v: 53, fl: 2 }, f14: { v: 66.9, fl: 1, gp: 3, d: 2600 } };
+// at sea: the Tomcat starts a mile behind the ship on the 3.5° glideslope down the angled deck, hook down, with the
+// 27 knots over the deck already in its speed; hookless types fly a slower, shorter final down the straight deck
+function resetSea() {
+  const A = APPR[T.id], Va = A.v, W = WINDS.sea.kt / KT, hook = !!T.hook;
+  const dx = hook ? LDx : 0, dz = hook ? LDz : -1, vg = Va - W * (hook ? 1 : Math.cos(ANG)), gpd = hook ? GS : 4 * D2R;
+  const d = hook ? 1850 : clamp(vg * 35, 250, 1500), gam = Math.asin(clamp(vg * Math.tan(gpd) / Va, 0, .3));
+  ac.flaps = A.fl; const st = solveTrim(Va, A.fl, gam);
+  let x, z, y;
+  if (hook) { const u = -d; x = ldX(u, 0); z = ldZ(u, 0); y = LENS.y + (LENS.u - (u + 6)) * Math.tan(GS) - 1.71; ac.hook = true; ac.hookPos = 1; }
+  else { x = AXIAL_X; z = 120 + d; y = DECK + 3 + d * Math.tan(gpd); }
+  ac.pos.set(x, y, z);
+  const wv = windVec(100);
+  ac.vel.set(dx * Va * Math.cos(gam) + wv.x, -Va * Math.sin(gam), dz * Va * Math.cos(gam) + wv.z);
+  ac.q.setFromEuler(_eu.set(st.alpha - gam, -(hook ? -9 : 0) * D2R, 0, 'YXZ'));
+  ac.ias = ac.V = Va;
+  ac.thr = st.thr; ac.spool = Math.min(st.thr / .8, 1); ac.trim = st.trim; ac.onGround = false; ac.airTime = 10; ac.rpm = T.eng.jet ? 62 + 38 * ac.spool : T.eng.idle + 900; ac.runT = 400;
+  for (const w of T.wheels) w.was = false;
+}
 function resetApproach() {
   resetCommon();
-  const r = windRunway(), A = APPR[T.id], gp = 4.2 * D2R, d = 1500, aim = 60, s = r === '20' ? 1 : -1;
+  if (atSea) return resetSea();
+  const r = windRunway(), A = APPR[T.id], gp = (A.gp || 4.2) * D2R, d = A.d || 1500, aim = 60, s = r === '20' ? 1 : -1;
   const u = s * (RW_LEN / 2 - aim + d);
   const Av = A.v * Math.sqrt(G / 9.81); // the same lift with a sixth of the weight: about 40% of the speed on the Moon
   ac.flaps = A.fl; const st = solveTrim(Av, A.fl, gp);
@@ -2330,7 +3197,7 @@ function resetApproach() {
   ac.vel.set(dirx * Av * Math.cos(gp), -Av * Math.sin(gp), dirz * Av * Math.cos(gp));
   ac.q.setFromEuler(_eu.set(st.alpha - gp, -hdg * D2R, 0, 'YXZ'));
   ac.ias = ac.V = Av;   // so auto trim holds the approach speed from the first frame
-  ac.thr = st.thr; ac.trim = st.trim; ac.onGround = false; ac.airTime = 10; ac.rpm = T.eng.idle + 900; ac.runT = 400;
+  ac.thr = st.thr; ac.spool = Math.min(st.thr / .8, 1); ac.trim = st.trim; ac.onGround = false; ac.airTime = 10; ac.rpm = T.eng.jet ? 62 + 38 * ac.spool : T.eng.idle + 900; ac.runT = 400;
   for (const w of T.wheels) w.was = false;
 }
 
@@ -2375,7 +3242,7 @@ function gatherInput(dt) {
   if (settings.autoTrim && !ac.onGround && !ac.crashed) {
     if (Math.abs(inp.elev) > .05) trimHold = null;
     else {
-      if (trimHold === null) { trimHold = clamp(ac.ias, T.vRef * .65, T.vRef * 1.4); vyRef = ac.vel.y; }
+      if (trimHold === null) { trimHold = clamp(ac.ias, T.vRef * .65, T.vRef * (T.atHi || 1.4)); vyRef = ac.vel.y; }
       vyRef += (ac.vel.y - vyRef) * Math.min(1, dt / 20);   // the steady climb or descent, so only the swings are damped
       ac.trim = approach(ac.trim, autoTrimTarget(trimHold), .5, dt);
     }
@@ -2390,7 +3257,18 @@ function gatherInput(dt) {
       inp.rud = clamp(inp.ail + 1.2 * ac.w.y + e * .12, -1, 1);
     } else { holdHdg = null; inp.rud = clamp(ac.beta * 6, -1, 1); }
   } else holdHdg = null;
-  inp.brake = keys.has('KeyB') || keys.has('Space') || touchBrake || !!(gp && gp.brake);
+  inp.brake = (keys.has('KeyB') || keys.has('Space') || touchBrake || !!(gp && gp.brake)) && !(ac.cat && ac.cat.st === 'stroke');
+}
+function setGear(down) {
+  if (!T.retract) { toast(T.id === 'c130' ? 'The gear lever is not modelled · it stays down' : 'Fixed gear', 1600); return; }
+  if (!down && ac.onGround) { toast('Weight on wheels · the gear stays down on the ground', 1800); return; }
+  if (down && !ac.gear && ac.ias * KT > 280) { toast('Too fast for the gear · below 280 KIAS', 1800); return; }
+  ac.gear = down ? 1 : 0;
+}
+function setHook(down) {
+  if (!T.hook) { toast('No tailhook on this one', 1400); return; }
+  ac.hook = down;
+  if (!down && ac.trap && !ac.trap.stopped) ac.hook = true;
 }
 function setFlaps(n) {
   if (T.flaps.length < 2) { toast('The J-3 has no flaps · slip it to steepen the descent', 2200); return; }
@@ -2410,6 +3288,8 @@ window.addEventListener('keydown', e => {
   if (e.code === 'BracketLeft') ac.trim = clamp(ac.trim - .015, -T.trimRange, T.trimRange);
   if (e.code === 'BracketRight') ac.trim = clamp(ac.trim + .015, -T.trimRange, T.trimRange);
   if (e.code === 'KeyC' && !e.repeat) cycleView();
+  if (e.code === 'KeyG' && !e.repeat) setGear(!ac.gear);
+  if (e.code === 'KeyH' && !e.repeat) setHook(!ac.hook);
 });
 window.addEventListener('keyup', e => keys.delete(e.code));
 window.addEventListener('blur', () => keys.clear());
@@ -2429,7 +3309,8 @@ function moveThr(e) { const r = thrEl.getBoundingClientRect(); ac.thr = clamp(1 
 thrEl.addEventListener('pointerdown', e => { thrId = e.pointerId; thrEl.setPointerCapture(e.pointerId); moveThr(e); e.preventDefault(); });
 thrEl.addEventListener('pointermove', e => { if (e.pointerId === thrId) moveThr(e); });
 thrEl.addEventListener('pointerup', () => thrId = null); thrEl.addEventListener('pointercancel', () => thrId = null);
-function syncThrottle() { const h = thrEl.clientHeight || 170; thrKnob.style.bottom = (ac.thr * (h - 26) + 2) + 'px'; thrFill.style.height = (ac.thr * 100) + '%'; thrKnob.textContent = Math.round(ac.thr * 100); }
+function syncThrottle() { const h = thrEl.clientHeight || 170; thrKnob.style.bottom = (ac.thr * (h - 26) + 2) + 'px'; thrFill.style.height = (ac.thr * 100) + '%'; thrKnob.textContent = T.eng.jet && ac.thr > .8 ? 'AB' : Math.round(ac.thr * 100);
+  if (T.retract) { $('bGear').classList.toggle('on', !!ac.gear); $('bHook').classList.toggle('on', !!ac.hook); } }
 function hold(el, on, off) {
   el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); el.classList.add('on'); on(); });
   const end = () => { el.classList.remove('on'); off(); };
@@ -2440,6 +3321,8 @@ hold($('rudL'), () => touchRud = -1, () => touchRud = 0);
 hold($('rudR'), () => touchRud = 1, () => touchRud = 0);
 hold($('brk'), () => touchBrake = true, () => touchBrake = false);
 $('flapUp').addEventListener('click', () => setFlaps(ac.flaps - 1));
+$('bGear').addEventListener('click', () => setGear(!ac.gear));
+$('bHook').addEventListener('click', () => setHook(!ac.hook));
 $('flapDn').addEventListener('click', () => setFlaps(ac.flaps + 1));
 repeat($('trimUp'), () => ac.trim = clamp(ac.trim + .015, -T.trimRange, T.trimRange));
 repeat($('trimDn'), () => ac.trim = clamp(ac.trim - .015, -T.trimRange, T.trimRange));
@@ -2453,6 +3336,7 @@ bView.addEventListener('click', cycleView);
 let camSnap = true, orbitA = 0, flyby = null;
 const camUp = new V3(0, 1, 0), _cv = new V3(), _cu = new V3(), _ct = new V3(), _look = new THREE.Euler(0, 0, 0, 'YXZ'), _lq = new Q(), _tilt = new Q().setFromEuler(new THREE.Euler(-.1, 0, 0));
 const SPOT = new V3(rwX(80, -RW_W / 2 - 11), FIELD + 1.7, rwZ(80, -RW_W / 2 - 11));
+const SPOT_SEA = new V3(ldX(LSO.u, LSO.v - 1), DECK + 1.8, ldZ(LSO.u, LSO.v - 1));   // the LSO platform
 for (const k in models) models[k].root.traverse(o => { if (o.isMesh && o.material && o.material.color && o.material.color.getHex() === 0x26343c) glass.push(o); });
 function updateCamera(dt) {
   const inCockpit = view === 'cockpit' && state !== 'title';
@@ -2472,7 +3356,8 @@ function updateCamera(dt) {
   }
   if (view === 'flightline') {
     // spectator at the flight line while the plane is near the field, otherwise a fly-by spot set ahead of it
-    if (SPOT.distanceTo(ac.pos) < 1400) { flyby = null; camera.position.copy(SPOT); }
+    const spot = atSea ? SPOT_SEA : SPOT;
+    if (spot.distanceTo(ac.pos) < (atSea ? 2600 : 1400)) { flyby = null; camera.position.copy(spot); }
     else {
       if (!flyby || flyby.distanceTo(ac.pos) > 900 || camSnap) {
         _cv.copy(ac.vel); if (_cv.lengthSq() < 4) _cv.set(0, 0, -1).applyQuaternion(ac.q); _cv.normalize();
@@ -2506,7 +3391,9 @@ function updateHUD() {
   let h = Math.round(heading()); if (h === 0) h = 360; eHdg.textContent = String(h).padStart(3, '0');
   eFlap.textContent = T.flaps.length > 1 ? T.flaps[ac.flaps].lab || T.flaps[ac.flaps].deg + '°' : '—';
   document.body.classList.toggle('noflaps', T.flaps.length < 2);
-  const W = WINDS[onMoon ? 'none' : settings.wind]; eWind.textContent = !W.kt ? 'CALM' : `${W.from}/${W.kt}${W.gust > 3 ? 'G' + (W.kt + W.gust) : ''} KT`;
+  const W = windCfg(); eWind.textContent = atSea ? `${W.kt} KT` : !W.kt ? 'CALM' : `${W.from}/${W.kt}${W.gust > 3 ? 'G' + (W.kt + W.gust) : ''} KT`; $('lWind').textContent = atSea ? 'OVER DECK' : 'WIND';
+  if (T.eng.jet) $('vAoa').textContent = (ac.onGround && ac.ias < 20 ? 0 : ac.alpha * R2D * 1.41).toFixed(1);
+  document.body.classList.toggle('ab', !!T.eng.jet && ac.thr > .8);
   syncThrottle();
 }
 function updateInstruments(dt) {
@@ -2551,7 +3438,8 @@ function initAudio() {
     const wg = mk('bandpass', 650, .5), rg = mk('lowpass', 120, 1), rain = mk('bandpass', 2600, .4), drum = mk('lowpass', 500, .7);
     const so = ctx.createOscillator(); const sg = ctx.createGain(); sg.gain.value = 0; so.connect(sg); sg.connect(master); so.start();
     const o4 = ctx.createOscillator(); o4.type = 'sine'; const g4 = ctx.createGain(); g4.gain.value = 0; o4.connect(g4); g4.connect(master); o4.start(); // turbine whine
-    au = { ctx, master, lp, eg, o1, o2, o3, g3, o4, g4, wg, rg, so, sg, rain, drum };
+    const roar = mk('lowpass', 520, .6), abr = mk('lowpass', 170, .9), hiss = mk('bandpass', 3800, .7);   // jet: exhaust roar, burner rumble, intake hiss
+    au = { ctx, master, lp, eg, o1, o2, o3, g3, o4, g4, wg, rg, so, sg, rain, drum, roar, abr, hiss };
     if (ctx.state !== 'running') ctx.resume();
   } catch (e) { au = null; }
 }
@@ -2571,12 +3459,17 @@ function updateAudio() {
   if (!au) return;
   const t = au.ctx.currentTime, on = settings.sound && state === 'flying', inside = view === 'cockpit';
   au.master.gain.setTargetAtTime(on ? (inside ? .55 : .4) : 0, t, .08);
-  const fire = Math.max(1, ac.rpm / 60 * T.eng.cyl / 2), blade = ac.rpm / 60 * (T.eng.nb || 2);
+  const fire = Math.max(1, ac.rpm / 60 * (T.eng.cyl || 4) / 2), blade = ac.rpm / 60 * (T.eng.nb || 2);
   au.o1.frequency.setTargetAtTime(fire, t, .05); au.o2.frequency.setTargetAtTime(fire * .5 + 1.1, t, .05); au.o3.frequency.setTargetAtTime(Math.max(1, blade), t, .05);
   au.lp.frequency.setTargetAtTime(220 + ac.thr * 700 + (T.eng.cyl > 4 ? -60 : 0), t, .1);
   au.eg.gain.setTargetAtTime(ac.crashed ? 0 : .08 + ac.thr * .16, t, .1); au.g3.gain.setTargetAtTime(ac.crashed ? 0 : .015 + ac.thr * .03, t, .1);
   au.wg.gain.setTargetAtTime(Math.min(.3, (ac.V / 45) ** 2 * .18), t, .2);
-  au.o4.frequency.setTargetAtTime(2400 + ac.rpm * .9 + ac.thr * 500, t, .3); au.g4.gain.setTargetAtTime(T.eng.turbo && !ac.crashed ? (inside ? .004 : .01) + ac.thr * .006 : 0, t, .2);
+  const jet = !!T.eng.jet && !ac.crashed, n2 = ac.rpm / 100;
+  if (T.eng.jet) { au.eg.gain.setTargetAtTime(0, t, .1); au.g3.gain.setTargetAtTime(0, t, .1); }
+  au.o4.frequency.setTargetAtTime(jet ? 900 + 3600 * n2 * n2 : 2400 + ac.rpm * .9 + ac.thr * 500, t, .3);
+  au.g4.gain.setTargetAtTime(T.eng.turbo && !ac.crashed ? (inside ? .004 : .01) + ac.thr * .006 : jet ? (inside ? .006 : .012) * (.4 + n2) : 0, t, .2);
+  const tf = jet ? clamp(ac.thrust / T.eng.Tab, 0, 1) : 0;
+  au.roar.gain.setTargetAtTime(jet ? (inside ? .1 : .22) * (.18 + 1.4 * tf) : 0, t, .15); au.abr.gain.setTargetAtTime(jet ? (inside ? .25 : .5) * (ac.ab || 0) : 0, t, .15); au.hiss.gain.setTargetAtTime(jet ? (inside ? .015 : .03) * n2 : 0, t, .2);
   const gs = Math.hypot(ac.vel.x, ac.vel.z); au.rg.gain.setTargetAtTime(ac.onGround && !ac.crashed ? Math.min(.5, gs / 25) : 0, t, .05);
   // stall warning: the 172's reed whistle, the 180's horn, the Carbon Cub G3X's AOA tone; the J-3 has none
   let s = 0; const near = !ac.onGround && !ac.crashed && ac.alpha > T.stallA - .045;
@@ -2602,9 +3495,14 @@ function closeMenu() { menu.hidden = true; }
 async function wake() {
   try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch (e) {}
 }
-function syncRunwayLabels() { const r = windRunway(); $('bTakeoff').textContent = `▶ Line up · Runway ${r}`; $('bApproach').textContent = `▶ Short final · Runway ${r}`; }
+function syncRunwayLabels() {
+  if (atSea) { $('bTakeoff').textContent = T.hook ? '▶ Catapult 1 · bow' : '▶ Deck run · from the stern'; $('bApproach').textContent = T.hook ? '▶ Carrier approach · 1 mile' : '▶ Short final · straight deck'; return; }
+  const r = windRunway(); $('bTakeoff').textContent = `▶ Line up · Runway ${r}`; $('bApproach').textContent = `▶ Short final · Runway ${r}`;
+}
 function begin(kind) {
-  if (onMoon) { kind === 'runway' ? resetRunway() : resetApproach(); toast(`One-sixth gravity · it flies at about 40% of its Earth speeds · ${kind === 'runway' ? 'ease it off early' : 'slow and shallow'}`, 4600); }
+  if (atSea) { kind === 'runway' ? resetRunway() : resetApproach();
+    toast(kind === 'runway' ? (T.hook ? 'Catapult 1 · full power and hold it · the shot comes in two seconds' : 'Deck run · 27 knots over the deck · full power') : T.hook ? 'Ship ahead · fly the ball, line-up and 15 units · hook is down' : 'Straight-deck landing · no hook, so stop with the brakes', 4200); }
+  else if (onMoon) { kind === 'runway' ? resetRunway() : resetApproach(); toast(`One-sixth gravity · it flies at about 40% of its Earth speeds · ${kind === 'runway' ? 'ease it off early' : 'slow and shallow'}`, 4600); }
   else if (kind === 'runway') { resetRunway(); toast(T.to || (T.tail ? 'Full power · right rudder · tail up, then fly it off' : 'Full power · keep the nosewheel light · rotate at 55 KIAS'), 4200); }
   else { resetApproach(); toast(`Runway ${windRunway()} ahead · trimmed for the approach`, 4000); }
   closeMenu(); state = 'flying'; camSnap = true; keys.clear(); last = performance.now(); acc = 0;
@@ -2633,6 +3531,7 @@ acsel.innerHTML = Object.values(TYPES).map(t => `<button class="acb" type="butto
 function setType(id) {
   T = TYPES[id] || TYPES.j3; settings.ac = T.id; saveSettings();
   for (const k in models) models[k].root.visible = k === T.id;
+  document.body.classList.toggle('jet', !!T.eng.jet); syncRunwayLabels();
   acsel.querySelectorAll('.acb').forEach(b => b.setAttribute('aria-checked', String(b.dataset.ac === T.id)));
   $('plcap').textContent = `${T.name.toUpperCase()} · V-SPEEDS · ${T.unit === 'kt' ? 'KIAS' : 'MPH IAS'}`;
   $('placard').innerHTML = T.placard.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
@@ -2653,10 +3552,16 @@ function syncWx() { wxSeg.querySelectorAll('button').forEach(b => b.setAttribute
 wxSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { applyWeather(b.dataset.x); saveSettings(); syncWx(); }));
 applyWeather(settings.wx); syncWx();
 const locSeg = $('locSeg');
-function syncLoc() { locSeg.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.l === settings.loc))); document.body.classList.toggle('moon', onMoon); syncRunwayLabels(); }
+const LOC_TXT = { earth: [$('mEyebrow').textContent, $('mSub').innerHTML],
+  sea: ['USS THEODORE ROOSEVELT · CVN-71 · GULF OF MEXICO', 'Nimitz-class carrier 80 nm south of Galveston: <b>1,092 ft</b> flight deck, landing area angled <b>9°</b>, four wires, <b>27 kt</b> over the deck. Catch a wire in the Tomcat, or take anything else off the bow. Paddles is on the radio.'] };
+function syncLoc() {
+  locSeg.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.l === settings.loc))); document.body.classList.toggle('moon', onMoon); document.body.classList.toggle('sea', atSea);
+  const L = LOC_TXT[atSea ? 'sea' : 'earth']; $('mEyebrow').textContent = L[0]; $('mSub').innerHTML = L[1]; syncRunwayLabels();
+}
 locSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
-  if ((b.dataset.l === 'moon') === onMoon) return;
+  if (b.dataset.l === settings.loc) return;
   if (b.dataset.l === 'moon') toast('Building the Moon…', 1200);
+  if (b.dataset.l === 'sea' && !seaBuilt) toast('Putting to sea…', 1200);
   setTimeout(() => { setWorld(b.dataset.l); saveSettings(); syncLoc(); if (state !== 'title') { state = 'title'; camSnap = true; bResume.hidden = true; mStatus.hidden = true; } resetRunway(); }, 30);
 }));
 
@@ -2688,7 +3593,7 @@ function frame(now) {
     acc += dt; let n = 0;
     while (acc >= DT && n < 12) { simT += DT; step(DT); acc -= DT; n++; }
     if (n >= 12) acc = 0;
-    if (Math.max(Math.abs(ac.pos.x), Math.abs(ac.pos.z)) > 24000 && !toastEl.classList.contains('show')) toast('A long way from R-Law · turn back', 2500);
+    if (Math.max(Math.abs(ac.pos.x), Math.abs(ac.pos.z)) > 24000 && !toastEl.classList.contains('show')) toast(atSea ? 'A long way from the ship · turn back' : 'A long way from R-Law · turn back', 2500);
   } else simT += dt;
   updateInstruments(dt);
   plane.position.copy(ac.pos); plane.quaternion.copy(ac.q);
@@ -2696,7 +3601,8 @@ function frame(now) {
   if (S.elev) S.elev.rotation.x = -inp.elev * .38;
   if (S.rud) S.rud.rotation.y = inp.rud * .45;
   if (S.ailR) { S.ailR.rotation.x = -inp.ail * .32; S.ailL.rotation.x = inp.ail * .32; }
-  if (S.flaps) { const fd = T.flaps[ac.flaps].deg * D2R; for (const f of S.flaps) f.rotation.x = approach(f.rotation.x, fd, .6, dt); }
+  if (S.flaps && !S.anim) { const fd = T.flaps[ac.flaps].deg * D2R; for (const f of S.flaps) f.rotation.x = approach(f.rotation.x, fd, .6, dt); }
+  if (S.anim) S.anim(dt);
   { const k = T.discK || 1; for (const pr of S.props || (S.prop ? [S.prop] : [])) { pr.g.rotation.z += ac.rpm / 60 * Math.PI * 2 * dt * (ac.rpm > 900 * k ? .085 : 1); pr.disc.visible = ac.rpm > 900 * k; pr.g.visible = ac.rpm < 1100 * k; } }
   // windsock swings toward where the wind is going and fills with speed (15 kt for full)
   { const wv = windVec(6), ws = Math.hypot(wv.x, wv.z) * KT; sock.rotation.set(-(Math.PI / 2) * (1 - clamp(ws / 15, .08, 1)) * .9, Math.atan2(-wv.x, -wv.z) + Math.PI, 0, 'YXZ'); }
@@ -2704,6 +3610,7 @@ function frame(now) {
   updateCamera(dt);
   fillTrees(view === 'flightline' ? (camera.position.x + ac.pos.x) / 2 : ac.pos.x, view === 'flightline' ? (camera.position.z + ac.pos.z) / 2 : ac.pos.z);
   sky.position.copy(camera.position); moonSky.position.copy(camera.position);
+  if (atSea) updateCarrier(dt);
   updateWeather(dt);
   { const f = view === 'flightline' ? camera.position : ac.pos; sunLight.target.position.set(Math.round(f.x / 4) * 4, Math.round(f.y / 4) * 4, Math.round(f.z / 4) * 4); sunLight.position.copy(sunLight.target.position).addScaledVector(sunDir, 1200); }
   hudT += dt; if (hudT > .1) { hudT = 0; updateHUD(); }
@@ -2717,9 +3624,9 @@ function frame(now) {
     camera.near = .5; camera.updateProjectionMatrix(); renderer.autoClear = true;
   }
 }
-window.__rf = { ac, TYPES, models, inp, step, setType: id => setType(id), begin, settings, groundHeight, solveTrim, get T() { return T; }, resetRunway, resetApproach, applyWeather, setWorld, get onMoon() { return onMoon; }, get G() { return G; }, get wx() { return wx; }, rainMesh: rain, deckLo, camera, updateWeather, scene, rwU, rwV, FIELD, RW_LEN, heading, treeHit, windVec, fillTrees, cabins, get view() { return view; }, set view(v) { view = v; }, get state() { return state; } };
+window.__rf = { ac, TYPES, models, inp, step, setType: id => setType(id), begin, settings, groundHeight, solveTrim, get T() { return T; }, resetRunway, resetApproach, applyWeather, setWorld, get onMoon() { return onMoon; }, get atSea() { return atSea; }, SEA, ldU, ldV, ldX, ldZ, DECK, WIRES, LENS, get G() { return G; }, get wx() { return wx; }, rainMesh: rain, deckLo, camera, updateWeather, scene, rwU, rwV, FIELD, RW_LEN, heading, treeHit, windVec, fillTrees, cabins, get view() { return view; }, set view(v) { view = v; }, get state() { return state; } };
 setType(settings.ac);
-if (settings.loc === 'moon') setWorld('moon'); syncLoc();
+if (settings.loc === 'moon' || settings.loc === 'sea') { setWorld(settings.loc); resetRunway(); } syncLoc();
 applyQuality();
 resize();
 updateHUD();
