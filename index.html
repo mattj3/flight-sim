@@ -838,6 +838,7 @@ for (const t of Object.values(TYPES)) {
 // Fabric is a satin dope finish, so it gets a soft highlight; the aluminium cowl is shinier.
 const plane = new THREE.Group(); scene.add(plane);
 const GLASS = 0x26343c, CUB = 0xf3c21a, BLK = 0x141414;
+const glass = [], outside = []; // exterior parts hidden from the cockpit view: glazing, and frames the cabin truss replaces
 const pmatCache = {};
 const pmat = (c, kind) => { const key = c + (kind || ''); return pmatCache[key] || (pmatCache[key] =
   c === GLASS ? new THREE.MeshPhongMaterial({ color: c, specular: 0x30383c, shininess: 90 })
@@ -974,11 +975,11 @@ function buildModel(t) {
   // window and door frames: the right side has the Cub's split door, upper half hinged to the wing
   for (const s of [-1, 1]) {
     const X = (z, y) => (halfX(...secAt(secs, z).slice(1), y) + .009) * s;
-    for (const zz of [-.5, .82]) bar([X(zz, .49), .49, zz], [X(zz, .91), .91, zz], .012, CUB, root, 6);
-    bar([X(-.5, .49), .49, -.5], [X(.82, .49), .49, .82], .012, CUB, root, 6);
-    if (s > 0) { bar([X(-.38, .49), .49, -.38], [X(-.38, .03), .03, -.38], .007, BLK, root, 4); bar([X(.36, .49), .49, .36], [X(.36, .03), .03, .36], .007, BLK, root, 4); bar([X(-.38, .03), .03, -.38], [X(.36, .03), .03, .36], .007, BLK, root, 4);
+    for (const zz of [-.5, .82]) outside.push(bar([X(zz, .49), .49, zz], [X(zz, .91), .91, zz], .012, CUB, root, 6));
+    outside.push(bar([X(-.5, .49), .49, -.5], [X(.82, .49), .49, .82], .012, CUB, root, 6));
+    if (s > 0) { outside.push(bar([X(-.38, .49), .49, -.38], [X(-.38, .03), .03, -.38], .007, BLK, root, 4), bar([X(.36, .49), .49, .36], [X(.36, .03), .03, .36], .007, BLK, root, 4), bar([X(-.38, .03), .03, -.38], [X(.36, .03), .03, .36], .007, BLK, root, 4));
       box(.02, .02, .07, 0xb8babc, X(.3, .3) + .01, .3, .3, root, 'metal'); }
-    bar([s * .36, .55, wz0], [s * .33, wtop, wz1], .014, CUB, root, 6);
+    outside.push(bar([s * .36, .55, wz0], [s * .33, wtop, wz1], .014, CUB, root, 6));
   }
   // engine: four cylinders, staggered fore and aft as on a flat four, plus exhaust stacks and the muffler under the cowl
   cylinder(1, .14, -1.82, root); cylinder(1, .14, -1.55, root); cylinder(-1, .14, -1.74, root); cylinder(-1, .14, -1.47, root);
@@ -1213,15 +1214,19 @@ function cabinJ3() {
   const p = new THREE.Group(), C = {}, TUBE = 0xd6b01e, FAB = 0xcdb98a, FAB2 = 0xbba776, BLK = 0x1a1a1a;
   // floor, fabric side walls below the window line, and the steel tube frame you see in a Cub
   cbox(.64, .02, 2.4, 0x6a5232, 0, -.16, .1, p);
+  // the cabin truss as one joined frame: lower longeron at the window sill, upper longeron under the wing, uprights
+  // at the windshield, door front, door rear and behind the seat, and the diagonal brace aft of the rear seat
+  const SILL = .49, TOP = .99;
   for (const s of [-1, 1]) {
-    cquad([s * .31, -.15, -1.0], [s * .31, .33, -1.0], [s * .31, .33, 1.4], [s * .31, -.15, 1.4], FAB, p);
-    cbar([s * .3, .33, -1.05], [s * .3, .33, 1.5], .012, TUBE, p); cbar([s * .3, .99, -.58], [s * .3, .99, 1.5], .012, TUBE, p);
-    for (const z of [-.58, .2, .95]) cbar([s * .3, .33, z], [s * .3, .99, z], .011, TUBE, p);
-    cbar([s * .3, .33, .2], [s * .3, .99, .95], .009, TUBE, p);
-    cbar([s * .3, .33, -1.0], [s * .3, .99, -.58], .014, TUBE, p);  // windshield post
+    cquad([s * .31, -.15, -1.0], [s * .31, SILL, -1.0], [s * .31, SILL, 1.7], [s * .31, -.15, 1.7], FAB, p);
+    cbar([s * .3, SILL, -1.05], [s * .3, SILL, 1.7], .012, TUBE, p); cbar([s * .3, TOP, -.58], [s * .3, TOP, 1.2], .012, TUBE, p);
+    for (const z of [-.58, .2, .95, 1.2]) cbar([s * .3, SILL, z], [s * .3, TOP, z], .011, TUBE, p);
+    cbar([s * .3, TOP, 1.2], [s * .3, SILL, 1.7], .011, TUBE, p);      // rear brace down to the tail cone
+    cbar([s * .3, SILL, -1.0], [s * .3, TOP, -.58], .014, TUBE, p);     // windshield post
   }
+  for (const z of [.95, 1.2]) cbar([-.3, TOP, z], [.3, TOP, z], .012, TUBE, p);  // carry-through tubes under the wing
+  cquad([-.31, TOP, 1.2], [.31, TOP, 1.2], [.31, SILL, 1.7], [-.31, SILL, 1.7], FAB, p); // fabric behind the seat
   // the right side has the classic split door: upper half hinged up under the wing, lower half folded down
-  cquad([.305, .97, -.5], [.305, .97, .9], [.34, 1.0, .9], [.34, 1.0, -.5], 0xd8c79a, p);
   // overhead: the underside of the wing centre section, yellow fabric glowing with the sun behind it, with the skylight
   // cut out between the wing roots and a tube frame around it, as in the real cabin
   const SKY = [-.28, .28, -.42, .37], roof = (x0, x1, z0, z1) => { const m = cbox(x1 - x0, .015, z1 - z0, 0xf0d25c, (x0 + x1) / 2, 1.0, (z0 + z1) / 2, p); m.material = cfab(0xf0d25c); return m; };
@@ -1229,7 +1234,7 @@ function cabinJ3() {
   for (const x of [SKY[0], SKY[1]]) cbar([x, .99, SKY[2]], [x, .99, SKY[3]], .011, TUBE, p);
   for (const z of [SKY[2], SKY[3], 0]) cbar([SKY[0], .99, z], [SKY[1], .99, z], .011, TUBE, p);
   for (const x of [-.62, -.3, .3, .62]) cbar([x, .99, -.6], [x, .99, 1.2], .006, 0xd9bd48, p); // wing ribs showing through the fabric
-  cbar([-.3, .99, -.58], [.3, .99, -.58], .015, TUBE, p);
+  cbar([-.3, TOP, -.58], [.3, TOP, -.58], .015, TUBE, p);
   // panel: a small black board under the windshield
   cbox(.64, .23, .03, BLK, 0, .35, -1.035, p); cquad([-.33, .46, -1.03], [.33, .46, -1.03], [.33, .56, -1.06], [-.33, .56, -1.06], 0x2a2620, p); // coaming up to the windshield
   C.panel = mkPanel(.62, .2, 0, .35, -1.018, p);
@@ -1954,12 +1959,12 @@ bView.addEventListener('click', cycleView);
 let camSnap = true, orbitA = 0, flyby = null;
 const camUp = new V3(0, 1, 0), _cv = new V3(), _cu = new V3(), _ct = new V3(), _look = new THREE.Euler(0, 0, 0, 'YXZ'), _lq = new Q(), _tilt = new Q().setFromEuler(new THREE.Euler(-.1, 0, 0));
 const SPOT = new V3(rwX(80, -RW_W / 2 - 11), FIELD + 1.7, rwZ(80, -RW_W / 2 - 11));
-const glass = [];
 for (const k in models) models[k].root.traverse(o => { if (o.isMesh && o.material && o.material.color && o.material.color.getHex() === 0x26343c) glass.push(o); });
 function updateCamera(dt) {
   const inCockpit = view === 'cockpit' && state !== 'title';
   document.body.classList.toggle('in-cockpit', inCockpit); document.body.classList.toggle('flying', state === 'flying');
   for (const g of glass) g.visible = !inCockpit;
+  for (const g of outside) g.visible = !inCockpit;
   if (window.__camHook) return window.__camHook(camera, ac);
   if (state === 'title') {
     orbitA += dt * (matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : .1);
