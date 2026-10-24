@@ -10,6 +10,7 @@ A browser flight sim: fly a Piper J-3 Cub, a Cessna 180K Skywagon, a Lockheed C-
 - Auto trim (on by default) holds your speed when you let go of the stick; auto rudder is on by default on phones.
 - **Carrier:** USS Theodore Roosevelt (CVN-71) steaming into the wind 80 nm south of Galveston with 27 kt over the deck. Catapult off the bow, then fly the ball on the Fresnel lens at 15 units and catch one of four wires on the 9° angled deck. Paddles talks you down, grades the pass and calls bolters and wave-offs. The Cub, 180 and C-130 can land on the straight deck and take off from it with no cat.
 - Calm, light or gusty wind; trees, parked planes, buildings and ponds to avoid. There's a Moon mode too.
+- **Ultra low** for old computers: open https://mattj3.github.io/flight-sims/?lite or press ULTRA LOW · OLD PCs in the menu. It drops shadows, antialiasing, the depth trick, most trees and the resolution, shortens the view, and caps the frame rate at 30. Flying is identical. The normal version is unchanged.
 - Keyboard, mouse, gamepad or phone. On a phone, turn it sideways: throttle slider on the left, stick on the right. On iPhone, Share → Add to Home Screen gives a full-screen view.
 
 The town, field and scenery are fictional and generated, not surveyed.

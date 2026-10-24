@@ -250,6 +250,7 @@ body:not(.touch) .touch-help{display:none}
       <button class="tog" id="tSound" type="button" aria-pressed="true">SOUND</button>
       <button class="tog" id="tData" type="button" aria-pressed="true">DATA STRIP</button>
       <button class="tog" id="tHigh" type="button" aria-pressed="true">HIGH QUALITY</button>
+      <button class="tog" id="tLite" type="button" aria-pressed="false">ULTRA LOW · OLD PCs</button>
       <button class="tog" id="tAuto" type="button" aria-pressed="false">AUTO RUDDER</button>
       <button class="tog" id="tTrim" type="button" aria-pressed="false">AUTO TRIM</button>
     </div>
@@ -290,6 +291,9 @@ const KT = 1.94384, FT = 3.28084, FPM = 196.85, MPH = 2.23694;
 const coarse = matchMedia('(pointer: coarse)').matches;
 const settings = { sound: true, data: true, high: !coarse, ac: 'j3', wind: 'light', wx: 'afternoon', autoRud: coarse, autoTrim: true, loc: 'earth' };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('rlaw-settings') || '{}')); } catch (e) {}
+// ultra-low mode for old machines (add ?lite to the address): no shadows or antialiasing, a low render resolution, nearer
+// fog and trees, 30 frames a second and slower panel redraws. The full version is untouched without it
+const LITE = /[?&]lite\b/.test(location.search);
 const saveSettings = () => { try { localStorage.setItem('rlaw-settings', JSON.stringify(settings)); } catch (e) {} };
 if (coarse) document.body.classList.add('touch');
 window.addEventListener('touchstart', () => document.body.classList.add('touch'), { once: true, passive: true });
@@ -423,18 +427,20 @@ function pondAt(x, z) { if (onMoon || atSea) return null; for (const p of ponds)
 
 /* ---------- renderer / scene ---------- */
 const canvas = $('view');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true, powerPreference: 'high-performance' });
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: !LITE, logarithmicDepthBuffer: !LITE, powerPreference: LITE ? 'default' : 'high-performance' }); }
+catch (e) { document.body.innerHTML = '<div style="font:16px/1.5 sans-serif;color:#eee;background:#111;padding:24px;min-height:100vh">This browser could not start WebGL, which the sim needs. Turn on hardware acceleration in the browser settings, or try another browser.' + (LITE ? '' : ' You can also try the <a style="color:#f2c200" href="?lite">ultra-low version</a>.') + '</div>'; throw e; }
+renderer.shadowMap.enabled = !LITE; renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.outputEncoding = THREE.LinearEncoding;
 const scene = new THREE.Scene();
 const HAZE = new THREE.Color(0xc9d2cc);
-scene.fog = new THREE.Fog(HAZE, 1800, 17000);
-const camera = new THREE.PerspectiveCamera(62, 1, .5, 40000);
+scene.fog = new THREE.Fog(HAZE, 1800, LITE ? 9000 : 17000);
+const NEAR = LITE ? 1.5 : .5, camera = new THREE.PerspectiveCamera(62, 1, NEAR, LITE ? 14000 : 40000);
 // late-October afternoon over East Texas: sun low in the south-west
 const sunDir = new V3(-.62, .52, .58).normalize();
 const hemi = new THREE.HemisphereLight(0xdfe9f2, 0x4a5233, .5); scene.add(hemi);
 const sunLight = new THREE.DirectionalLight(0xffe7c4, .95); scene.add(sunLight, sunLight.target);
-sunLight.castShadow = true;
+sunLight.castShadow = !LITE;
 { const sh = sunLight.shadow; sh.bias = -.0005; sh.normalBias = .4; Object.assign(sh.camera, { left: -230, right: 230, top: 230, bottom: -230, near: 1, far: 2400 }); sh.camera.updateProjectionMatrix(); }
 const matCache = {};
 const mat = c => matCache[c] || (matCache[c] = new THREE.MeshLambertMaterial({ color: c }));
@@ -2455,13 +2461,13 @@ function applyWeather(id) {
   sunLight.color.set(wx.sun); sunLight.intensity = wx.sunI; sunLight.castShadow = wx.sunI > .3;
   hemi.color.set(wx.sky); hemi.groundColor.set(wx.gnd); hemi.intensity = wx.hemiI;
   const U = sky.material.uniforms; U.uZen.value.set(wx.zen); U.uHor.value.set(wx.hor); U.uGlow.value.setRGB(...wx.glow); U.uBand.value = wx.band; U.uDisc.value = wx.disc;
-  scene.fog.color.set(wx.haze); scene.fog.near = wx.fog[0]; scene.fog.far = wx.fog[1];
+  scene.fog.color.set(wx.haze); const cap = LITE && wx.fog[1] < 1e5; scene.fog.near = cap ? Math.min(wx.fog[0], 1200) : wx.fog[0]; scene.fog.far = cap ? Math.min(wx.fog[1], 9000) : wx.fog[1];
   for (let i = 0; i < clouds.length; i++) clouds[i].visible = (i * .618) % 1 < wx.cu;
   if (clouds.length) clouds[0].material.emissive.set(wx.cuTint || 0);
   cpHemi.intensity = wx.cp[0]; cpAmb.intensity = wx.cp[1]; cpSun.intensity = wx.cp[2];
   deckLo.visible = deckHi.visible = !!wx.ceil; if (wx.ceil) deckLo.material.color.set(wx.deck);
   rain.visible = !!wx.rain;
-  if (wx.rain) { rain.geometry.setDrawRange(0, Math.round(wx.rain.n * (settings.high ? 1 : .5)) * 2); rain.material.uniforms.uA.value = wx.rain.a; }
+  if (wx.rain) { rain.geometry.setDrawRange(0, Math.round(wx.rain.n * (settings.high && !LITE ? 1 : .3)) * 2); rain.material.uniforms.uA.value = wx.rain.a; }
   renderer.shadowMap.needsUpdate = true;
 }
 // called every frame after the camera moves: the deck follows the camera, cloud whiteout, rain streaks
@@ -2616,6 +2622,8 @@ function buildMoon() {
   }
 }
 const moonSky = new THREE.Group(); moonSky.visible = false; scene.add(moonSky);
+// the lite camera stops at 14 km, so pull the sky dome, stars and Earth in to stay inside it
+if (LITE) { sky.scale.setScalar(.45); moonSky.scale.setScalar(.45); }
 function setWorld(loc) {
   const moon = loc === 'moon', sea = loc === 'sea'; settings.loc = moon ? 'moon' : sea ? 'sea' : 'earth';
   if (moon) buildMoon();
@@ -3034,7 +3042,7 @@ function updateCockpit(dt) {
   }
   if (T.id === 'c180') { C.thr.position.z = -.7 - ac.thr * .07; C.yoke.rotation.z = -inp.ail * .8; C.yoke.position.z = -.62 + inp.elev * .08; C.trim.rotation.x = ac.trim * 20; C.flap.rotation.x = -T.flaps[ac.flaps].deg * D2R * 1.4; }
   panelT += dt;
-  if (panelT > 1 / 30) {
+  if (panelT > (LITE ? 1 / 10 : 1 / 30)) {
     panelT = 0;
     drawPanel(T.id);
     if (C.comp) drawWhiskey(C.comp, instr.comp);
@@ -3801,6 +3809,9 @@ bindToggle('tTrim', 'autoTrim', () => document.body.classList.toggle('autotrim',
 document.body.classList.toggle('autotrim', !!settings.autoTrim);
 bindToggle('tData', 'data', () => document.body.classList.toggle('nodata', !settings.data));
 bindToggle('tHigh', 'high', () => { applyQuality(); resize(); });
+// ultra low needs a fresh start (the renderer is made without antialiasing or shadows), so it reloads with or without ?lite
+$('tLite').setAttribute('aria-pressed', LITE); if (LITE) $('tHigh').disabled = true;
+$('tLite').addEventListener('click', () => { location.search = LITE ? '' : '?lite'; });
 document.body.classList.toggle('nodata', !settings.data);
 const acsel = $('acsel');
 acsel.innerHTML = Object.values(TYPES).map(t => `<button class="acb" type="button" role="radio" data-ac="${t.id}" aria-checked="false">${t.short}<small>${t.blurb}</small></button>`).join('');
@@ -3843,8 +3854,8 @@ locSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () =>
 
 /* ---------- quality / resize ---------- */
 function applyQuality() {
-  const hi = settings.high;
-  treeR1 = hi ? 1100 : 650; treeR2 = hi ? 2100 : 1500;
+  const hi = settings.high && !LITE;
+  treeR1 = LITE ? 320 : hi ? 1100 : 650; treeR2 = LITE ? 800 : hi ? 2100 : 1500;
   canopyU.near.value = treeR2 * .78; canopyU.far.value = treeR2 * .98;
   const ms = hi ? 2048 : 1024, sh = sunLight.shadow;
   if (sh.mapSize.x !== ms) { sh.mapSize.set(ms, ms); if (sh.map) { sh.map.dispose(); sh.map = null; } }
@@ -3852,7 +3863,7 @@ function applyQuality() {
 }
 function resize() {
   const w = window.innerWidth || 800, h = window.innerHeight || 600, dpr = devicePixelRatio || 1;
-  renderer.setPixelRatio(settings.high ? Math.min(2, dpr) : Math.min(1.25, dpr));
+  renderer.setPixelRatio(LITE ? .55 : settings.high ? Math.min(2, dpr) : Math.min(1.25, dpr));
   renderer.setSize(w, h, false);
   camera.aspect = w / h; camera.updateProjectionMatrix(); syncThrottle();
 }
@@ -3863,6 +3874,7 @@ let last = performance.now(), acc = 0, hudT = 0;
 const DT = 1 / 120;
 function frame(now) {
   requestAnimationFrame(frame);
+  if (LITE && now - last < 31) return;   // 30 frames a second is plenty on an old machine
   const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now;
   if (state === 'flying') {
     gatherInput(dt);
@@ -3900,7 +3912,7 @@ function frame(now) {
     renderer.autoClear = false; renderer.clearDepth();
     camera.near = .02; camera.updateProjectionMatrix();
     renderer.render(cockpitScene, camera);
-    camera.near = .5; camera.updateProjectionMatrix(); renderer.autoClear = true;
+    camera.near = NEAR; camera.updateProjectionMatrix(); renderer.autoClear = true;
   }
 }
 window.__rf = { ac, TYPES, models, inp, step, setType: id => setType(id), begin, settings, groundHeight, solveTrim, get T() { return T; }, resetRunway, resetApproach, applyWeather, setWorld, get onMoon() { return onMoon; }, get atSea() { return atSea; }, SEA, ldU, ldV, ldX, ldZ, DECK, WIRES, LENS, get G() { return G; }, get wx() { return wx; }, rainMesh: rain, deckLo, camera, updateWeather, scene, rwU, rwV, FIELD, RW_LEN, heading, treeHit, windVec, fillTrees, cabins, get view() { return view; }, set view(v) { view = v; }, get state() { return state; } };
