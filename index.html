@@ -272,7 +272,7 @@ body:not(.touch) .touch-help{display:none}
       <dt>[ ]</dt><dd>Trim nose down / nose up, with auto trim off (menu). Auto trim holds the speed you were flying when you let go of the stick</dd>
       <dt>B · Space</dt><dd>Brakes. Hold rudder to brake one side</dd>
       <dt>G · H</dt><dd>F-14: gear up / down, tailhook up / down. Throttle past 80% lights the afterburners</dd>
-      <dt>K</dt><dd>Fire the guns, with machine guns on (menu). Only the F-14's M61 is real; the others are for fun</dd>
+      <dt>K</dt><dd>Fire the guns, with machine guns on (menu). A USB flight stick's trigger and a gamepad's LB fire them too. Only the F-14's M61 is real; the others are for fun</dd>
       <dt>C · drag</dt><dd>Change view · drag the view to look around the cabin</dd>
     </dl>
     <dl class="help touch-help">
@@ -3495,13 +3495,15 @@ function readGamepad(dt) {
     const dz = v => Math.abs(v) < .08 ? 0 : v, b = i => p.buttons[i] ? p.buttons[i].value : 0;
     const press = i => { const now = b(i) > .5, was = gpPrev[i]; gpPrev[i] = now; return now && !was; };
     ac.thr = clamp(ac.thr + (b(7) - b(6)) * .6 * dt, 0, 1);
-    if (press(0)) setFlaps(ac.flaps + 1);
+    // a USB flight stick reports a non-standard mapping and its trigger is button 0: with guns on it fires them instead of lowering flaps
+    const stickTrig = p.mapping !== 'standard' && (settings.guns || kids);
+    if (!stickTrig && press(0)) setFlaps(ac.flaps + 1);
     if (press(2)) setFlaps(ac.flaps - 1);
     if (press(3)) cycleView();
     if (press(12)) ac.trim = clamp(ac.trim - .02, -T.trimRange, T.trimRange);
     if (press(13)) ac.trim = clamp(ac.trim + .02, -T.trimRange, T.trimRange);
     if (press(5)) fireJato();
-    return { ail: dz(p.axes[0] || 0), elev: dz(p.axes[1] || 0), rud: dz(p.axes[2] || 0), brake: b(1) > .5, rev: b(6) > .5 && ac.thr === 0, gun: b(4) > .5 };
+    return { ail: dz(p.axes[0] || 0), elev: dz(p.axes[1] || 0), rud: dz(p.axes[2] || 0), brake: b(1) > .5, rev: b(6) > .5 && ac.thr === 0, gun: b(4) > .5 || (stickTrig && b(0) > .5) };
   }
   return null;
 }
