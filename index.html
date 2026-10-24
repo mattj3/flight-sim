@@ -270,6 +270,7 @@ body:not(.touch) .touch-help{display:none}
       <button class="tog" id="tAuto" type="button" aria-pressed="false">AUTO RUDDER</button>
       <button class="tog" id="tTrim" type="button" aria-pressed="false">AUTO TRIM</button>
       <button class="tog" id="tGuns" type="button" aria-pressed="false">MACHINE GUNS</button>
+      <button class="tog" id="tRockets" type="button" aria-pressed="true">ROCKETS · JATO</button>
       <button class="tog" id="bFireBind" type="button" aria-pressed="false">SET FIRE BUTTON</button>
     </div>
     <dl class="help key-help">
@@ -309,7 +310,7 @@ const KT = 1.94384, FT = 3.28084, FPM = 196.85, MPH = 2.23694;
 
 /* ---------- settings ---------- */
 const coarse = matchMedia('(pointer: coarse)').matches;
-const settings = { sound: true, data: true, high: !coarse, ac: 'j3', wind: 'light', wx: 'afternoon', autoRud: coarse, autoTrim: true, loc: 'earth', guns: false };
+const settings = { sound: true, data: true, high: !coarse, ac: 'j3', wind: 'light', wx: 'afternoon', autoRud: coarse, autoTrim: true, loc: 'earth', guns: false, rockets: true };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('rlaw-settings') || '{}')); } catch (e) {}
 // ultra-low mode for old machines (add ?lite to the address): no shadows or antialiasing, a low render resolution, nearer
 // fog and trees, 30 frames a second and slower panel redraws. The full version is untouched without it
@@ -1156,7 +1157,8 @@ function buildModel(t) {
   surf.prop = prop(t, root);
   // the fun part: a rocket under each wing on a little pylon, red nose and fins, with its flame
   if (t.jato) { surf.jatoFl = [];
-    for (const s of [-1, 1]) { const g = pivot(s * 1.5, .8, -.55, root);
+    surf.jatoGr = [];
+    for (const s of [-1, 1]) { const g = pivot(s * 1.5, .8, -.55, root); surf.jatoGr.push(g);
       box(.03, .12, .3, 0x9a9a9a, 0, .1, 0, g);
       const tb = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .8, 12).rotateX(Math.PI / 2), pmat(0xd8d8d2, 'metal')); tb.castShadow = true; g.add(tb);
       const nc = new THREE.Mesh(new THREE.ConeGeometry(.06, .2, 12).rotateX(-Math.PI / 2).translate(0, 0, -.5), pmat(0xc8241c)); g.add(nc);
@@ -1386,9 +1388,9 @@ function buildModel130(t) {
     bar([0, 0, 0], [0, ny + 1.75, -.1], .09, 0x9ca1a5, gn, 8, 1, 'metal');
     for (const s of [-1, 1]) wheel(.5, .3, s * .23, ny + 1.75, -.1, gn); }
   // JATO: four bottles a side on the paratroop doors, nozzles canted down and aft, with their flames
-  surf.jatoFl = [];
+  surf.jatoFl = []; surf.jatoGr = [];
   for (const s of [-1, 1]) for (const [dy, dz] of [[-.45, 3.3], [-.45, 4.6], [-.95, 3.3], [-.95, 4.6]]) {
-    const b = pivot(s * 2.32, dy, dz, root); b.rotation.x = t.jato.cant;
+    const b = pivot(s * 2.32, dy, dz, root); b.rotation.x = t.jato.cant; surf.jatoGr.push(b);
     const c = new THREE.Mesh(new THREE.CylinderGeometry(.15, .15, 1.2, 12).rotateX(Math.PI / 2), pmat(0xcac7bc)); c.castShadow = true; b.add(c);
     const nz = new THREE.Mesh(new THREE.CylinderGeometry(.08, .13, .16, 10, 1, true).rotateX(Math.PI / 2).translate(0, 0, .68), pmat(0x2b2b2b)); b.add(nz);
     const fl = new THREE.Group(); fl.position.z = .76; fl.visible = false; b.add(fl); surf.jatoFl.push(fl);
@@ -3499,7 +3501,7 @@ const gpPrev = [];
 // the fire button: a USB flight stick's trigger (button 0 on a non-standard mapping), a gamepad's LB, or whatever button was set in
 // the menu with SET FIRE BUTTON. It is read on every connected device, because some sticks show up as more than one
 function gunButton(p, i) {
-  const fb = settings.fireBtn, on = settings.guns || kids;
+  const fb = settings.fireBtn, on = !!settings.guns;
   if (!on) return false;
   if (fb) return p.id === fb.id && i === fb.b;
   return p.mapping === 'standard' ? i === 4 : i === 0;
@@ -3572,7 +3574,7 @@ function gatherInput(dt) {
     } else { holdHdg = null; inp.rud = clamp(ac.beta * 6, -1, 1); }
   } else holdHdg = null;
   inp.brake = (keys.has('KeyB') || keys.has('Space') || touchBrake || !!(gp && gp.brake)) && !(ac.cat && ac.cat.st === 'stroke');
-  inp.gun = (!!settings.guns || kids) && (keys.has('KeyK') || touchGun || !!(gp && gp.gun));
+  inp.gun = !!settings.guns && (keys.has('KeyK') || touchGun || !!(gp && gp.gun));
 }
 function setGear(down) {
   if (!T.retract) { toast('Fixed gear', 1600); return; }
@@ -3582,6 +3584,7 @@ function setGear(down) {
 }
 function fireJato() {
   if (!T.jato) { toast('No JATO on this airplane', 1400); return; }
+  if (!settings.rockets) { toast(T.jato.shots > 1 ? 'Rockets removed · put them back in the menu' : 'JATO bottles removed · put them back in the menu', 1800); return; }
   if (ac.crashed || state !== 'flying') return;
   if (ac.jatoT > 0) return;
   if ((ac.jatoShots || 0) >= (T.jato.shots || 1)) { toast(T.jato.shots > 1 ? 'Out of rockets' : 'The JATO bottles are spent', 1600); return; }
@@ -3722,7 +3725,7 @@ function updateHUD() {
   eFlap.textContent = T.flaps.length > 1 ? T.flaps[ac.flaps].lab || T.flaps[ac.flaps].deg + '°' : '—';
   document.body.classList.toggle('noflaps', T.flaps.length < 2);
   const W = windCfg(); eWind.textContent = atSea ? `${W.kt} KT` : !W.kt ? 'CALM' : `${W.from}/${W.kt}${W.gust > 3 ? 'G' + (W.kt + W.gust) : ''} KT`; $('lWind').textContent = atSea ? 'OVER DECK' : 'WIND';
-  if (settings.guns || kids) eAmmo.textContent = kids ? '∞' : ac.ammo;
+  if (settings.guns) eAmmo.textContent = kids ? '∞' : ac.ammo;
   if (kids) ePop.textContent = popped;
   if (T.eng.jet) $('vAoa').textContent = (ac.onGround && ac.ias < 20 ? 0 : ac.alpha * R2D * 1.41).toFixed(1);
   document.body.classList.toggle('ab', !!T.eng.jet && ac.thr > .8);
@@ -3927,7 +3930,7 @@ function updateTargets(dt) {
 // the crosshair: where the guns are pointing, 400 m out along the gun line (the drop over that range is under a metre)
 const xhEl = $('xhair'); let xhOn = false;
 function updateXhair() {
-  let on = (settings.guns || kids) && state === 'flying' && !ac.crashed;
+  let on = !!settings.guns && state === 'flying' && !ac.crashed;
   if (on) {
     const g = gunOf(T); let mx = 0, my = 0; for (const p of g.p) { mx += p[0] / g.p.length; my += p[1] / g.p.length; }
     camera.updateMatrixWorld(); _gp.set(mx, my, -400).applyQuaternion(ac.q).add(ac.pos).project(camera);
@@ -4035,7 +4038,7 @@ function begin(kind) {
     toast(kind === 'runway' ? (T.hook ? 'Catapult 1 · full power and hold it · the shot comes in two seconds' : 'Deck run · 27 knots over the deck · full power') : T.hook ? 'Ship ahead · fly the ball, line-up and 15 units · hook is down' : 'Straight-deck landing · no hook, so stop with the brakes', 4200); }
   else if (onMoon) { kind === 'runway' ? resetRunway() : resetApproach(); toast(`One-sixth gravity · it flies at about 40% of its Earth speeds · ${kind === 'runway' ? 'ease it off early' : 'slow and shallow'}`, 4600); }
   else if (kind === 'runway') { resetRunway(); toast(T.to || (T.tail ? 'Full power · right rudder · tail up, then fly it off' : 'Full power · keep the nosewheel light · rotate at 55 KIAS'), 4200); }
-  else if (kids) { resetApproach(); kidsFly(ac.pos.x, ac.pos.z, heading(), 260); toast(`Free fly · you can't crash · hold ${coarse ? 'FIRE' : 'K'} to shoot the target planes`, 4200); }
+  else if (kids) { resetApproach(); kidsFly(ac.pos.x, ac.pos.z, heading(), 260); toast(settings.guns ? `Free fly · you can't crash · hold ${coarse ? 'FIRE' : 'K'} to shoot the target planes` : 'Free fly · you can\'t crash · turn on MACHINE GUNS in the menu to shoot the target planes', 4200); }
   else { resetApproach(); toast(`Runway ${windRunway()} ahead · trimmed for the approach`, 4000); }
   closeMenu(); state = 'flying'; camSnap = true; keys.clear(); last = performance.now(); acc = 0;
   initAudio(); wake(); updateHUD(); fillTrees(ac.pos.x, ac.pos.z, true);
@@ -4078,7 +4081,13 @@ $('bFireBind').addEventListener('click', () => {
   }, 40);
 });
 syncFireBind();
-function syncGuns() { document.body.classList.toggle('guns', !!settings.guns || kids); }
+// ROCKETS · JATO: take the Cub's rockets and the C-130's JATO bottles off (or put them back), models and all
+function syncRockets() {
+  for (const k in models) for (const g of models[k].surf.jatoGr || []) g.visible = !!settings.rockets;
+  document.body.classList.toggle('jato', !!(T && T.jato) && !!settings.rockets);
+}
+bindToggle('tRockets', 'rockets', () => { syncRockets(); if (!settings.rockets) { ac.jatoT = 0; } toast(settings.rockets ? 'Rockets and JATO bottles fitted' : 'Rockets and JATO bottles removed', 1800); });
+function syncGuns() { document.body.classList.toggle('guns', !!settings.guns); }
 syncGuns();
 bindToggle('tData', 'data', () => document.body.classList.toggle('nodata', !settings.data));
 bindToggle('tHigh', 'high', () => { applyQuality(); resize(); });
@@ -4091,7 +4100,7 @@ acsel.innerHTML = Object.values(TYPES).map(t => `<button class="acb" type="butto
 function setType(id) {
   T = TYPES[id] || TYPES.j3; settings.ac = T.id; saveSettings();
   for (const k in models) models[k].root.visible = k === T.id;
-  document.body.classList.toggle('jet', !!T.eng.jet); document.body.classList.toggle('gear', !!T.retract); document.body.classList.toggle('rev', !!T.eng.rev); document.body.classList.toggle('jato', !!T.jato); { const rk = T.jato && T.jato.shots > 1; $('hJato').textContent = rk ? 'J rockets · ' : 'J JATO · '; $('bJato').textContent = rk ? 'ROCKETS' : 'JATO'; } syncRunwayLabels();
+  document.body.classList.toggle('jet', !!T.eng.jet); document.body.classList.toggle('gear', !!T.retract); document.body.classList.toggle('rev', !!T.eng.rev); document.body.classList.toggle('jato', !!T.jato && settings.rockets); syncRockets(); { const rk = T.jato && T.jato.shots > 1; $('hJato').textContent = rk ? 'J rockets · ' : 'J JATO · '; $('bJato').textContent = rk ? 'ROCKETS' : 'JATO'; } syncRunwayLabels();
   acsel.querySelectorAll('.acb').forEach(b => b.setAttribute('aria-checked', String(b.dataset.ac === T.id)));
   $('plcap').textContent = `${T.name.toUpperCase()} · V-SPEEDS · ${T.unit === 'kt' ? 'KIAS' : 'MPH IAS'}`;
   $('placard').innerHTML = T.placard.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
@@ -4113,7 +4122,7 @@ wxSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => 
 applyWeather(settings.wx); syncWx();
 const locSeg = $('locSeg');
 const LOC_TXT = { earth: [$('mEyebrow').textContent, $('mSub').innerHTML],
-  kids: ['FREE FLY · R-LAW · NO CRASHING', 'Fly anywhere and you can\'t crash: hit the ground or a tree and you bounce back up into the sky. Five bright target planes circle the field, slow and easy to hit: four hits and one goes down in smoke. Hold <b>K</b> (or the red <b>FIRE</b> button) to shoot them. The guns never run out here.'],
+  kids: ['FREE FLY · R-LAW · NO CRASHING', 'Fly anywhere and you can\'t crash: hit the ground or a tree and you bounce back up into the sky. Five bright target planes circle the field, slow and easy to hit: four hits and one goes down in smoke. Turn on <b>MACHINE GUNS</b> below and hold <b>K</b> (or the red <b>FIRE</b> button) to shoot them. The guns never run out here.'],
   sea: ['USS THEODORE ROOSEVELT · CVN-71 · GULF OF MEXICO', 'Nimitz-class carrier 80 nm south of Galveston: <b>1,092 ft</b> flight deck, landing area angled <b>9°</b>, four wires, <b>27 kt</b> over the deck. Catch a wire in the Tomcat or the Brick Jet, or take anything else off the bow. Paddles is on the radio.'] };
 function syncLoc() {
   locSeg.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.l === settings.loc))); document.body.classList.toggle('moon', onMoon); document.body.classList.toggle('sea', atSea);
