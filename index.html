@@ -80,6 +80,7 @@ body.autotrim #trimCol{display:none!important}
   .touch-only .btn{height:34px;min-width:64px}
   #rudRow .btn{height:36px;min-width:64px}
   #left,#right{bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+  #bGun{width:66px;height:66px;font-size:13px}
   .card{padding:14px;gap:11px}
   .card h1{font-size:30px}
 }
@@ -129,10 +130,13 @@ body.moon .earth-only,body.sea .land-only{display:none}
 body.rev .btn.rev-only,body.jato .btn.jato-only{display:block!important}
 body.jato #hint .jato-only{display:inline!important}
 .xcol{display:none!important}
-body.gear .col.xcol,body.jato .col.xcol,body.rev .col.xcol,body.guns .col.xcol{display:flex!important}
+body.gear .col.xcol,body.jato .col.xcol,body.rev .col.xcol{display:flex!important}
 .guns-only,.kids-only{display:none!important}
 body.kids .cell.kids-only{display:flex!important}
 body.guns .btn.guns-only{display:block!important}
+/* the fire button: big, round and red so it's easy to find with a thumb and can't be mistaken for its neighbours */
+#bGun{width:78px;height:78px;min-width:0;padding:0;margin-left:6px;border-radius:50%;border:3px solid #ffd3c9;background:radial-gradient(circle at 38% 32%,#ff7a62,#d8261a 62%,#8e130c);color:#fff;font:800 15px/1 var(--f-ui);letter-spacing:.1em;text-shadow:0 1px 2px rgba(0,0,0,.6);box-shadow:0 0 0 4px rgba(216,38,26,.35),0 4px 12px rgba(0,0,0,.5)}
+#bGun.on{transform:scale(.93);background:radial-gradient(circle at 50% 50%,#ffb04a,#ff4a1a 55%,#a3160d);box-shadow:0 0 0 6px rgba(255,140,40,.55),0 0 22px rgba(255,120,30,.8)}
 body.guns .cell.guns-only{display:flex!important}
 body.guns #hint .guns-only{display:inline!important}
 body.gear .btn.gear-only{display:block!important}
@@ -200,8 +204,8 @@ body:not(.touch) .touch-help{display:none}
     <button class="btn jet-only" id="bHook" type="button">HOOK</button>
     <button class="btn rev-only" id="bRev" type="button">REV</button>
     <button class="btn jato-only" id="bJato" type="button">JATO</button>
-    <button class="btn guns-only" id="bGun" type="button">GUNS</button>
   </div>
+  <button class="btn guns-only" id="bGun" type="button" aria-label="Fire the guns">FIRE</button>
 </div>
 <div id="right" class="touch-only">
   <div class="col" id="trimCol">
@@ -285,7 +289,7 @@ body:not(.touch) .touch-help{display:none}
       <dt>Rudder</dt><dd>Auto rudder (menu) steers with the stick on the ground and keeps the ball centred. Turn it off for the rudder buttons; taildraggers need them the whole roll</dd>
       <dt>Auto trim</dt><dd>On by default. Let go of the stick and it holds the speed you were flying. Turn it off in the menu for the trim buttons</dd>
       <dt>Gear · Hook</dt><dd>F-14 only. Throttle past 80% lights the afterburners</dd>
-      <dt>Guns</dt><dd>Hold to fire, with machine guns on (menu)</dd>
+      <dt>Fire</dt><dd>Hold the red button to fire, with machine guns on (menu)</dd>
       <dt>Drag view</dt><dd>Look around the cabin</dd>
     </dl>
     <p class="fine">A fictional grass-strip fly-in in the East Texas piney woods, set on a late-October afternoon. Scenery is generated, not surveyed. Gamepads work too.</p>
@@ -4031,7 +4035,7 @@ function begin(kind) {
     toast(kind === 'runway' ? (T.hook ? 'Catapult 1 · full power and hold it · the shot comes in two seconds' : 'Deck run · 27 knots over the deck · full power') : T.hook ? 'Ship ahead · fly the ball, line-up and 15 units · hook is down' : 'Straight-deck landing · no hook, so stop with the brakes', 4200); }
   else if (onMoon) { kind === 'runway' ? resetRunway() : resetApproach(); toast(`One-sixth gravity · it flies at about 40% of its Earth speeds · ${kind === 'runway' ? 'ease it off early' : 'slow and shallow'}`, 4600); }
   else if (kind === 'runway') { resetRunway(); toast(T.to || (T.tail ? 'Full power · right rudder · tail up, then fly it off' : 'Full power · keep the nosewheel light · rotate at 55 KIAS'), 4200); }
-  else if (kids) { resetApproach(); kidsFly(ac.pos.x, ac.pos.z, heading(), 260); toast(`Free fly · you can't crash · hold ${coarse ? 'GUNS' : 'K'} to shoot the target planes`, 4200); }
+  else if (kids) { resetApproach(); kidsFly(ac.pos.x, ac.pos.z, heading(), 260); toast(`Free fly · you can't crash · hold ${coarse ? 'FIRE' : 'K'} to shoot the target planes`, 4200); }
   else { resetApproach(); toast(`Runway ${windRunway()} ahead · trimmed for the approach`, 4000); }
   closeMenu(); state = 'flying'; camSnap = true; keys.clear(); last = performance.now(); acc = 0;
   initAudio(); wake(); updateHUD(); fillTrees(ac.pos.x, ac.pos.z, true);
@@ -4109,7 +4113,7 @@ wxSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => 
 applyWeather(settings.wx); syncWx();
 const locSeg = $('locSeg');
 const LOC_TXT = { earth: [$('mEyebrow').textContent, $('mSub').innerHTML],
-  kids: ['FREE FLY · R-LAW · NO CRASHING', 'Fly anywhere and you can\'t crash: hit the ground or a tree and you bounce back up into the sky. Five bright target planes circle the field, slow and easy to hit: four hits and one goes down in smoke. Hold <b>K</b> (or <b>GUNS</b>) to shoot them. The guns never run out here.'],
+  kids: ['FREE FLY · R-LAW · NO CRASHING', 'Fly anywhere and you can\'t crash: hit the ground or a tree and you bounce back up into the sky. Five bright target planes circle the field, slow and easy to hit: four hits and one goes down in smoke. Hold <b>K</b> (or the red <b>FIRE</b> button) to shoot them. The guns never run out here.'],
   sea: ['USS THEODORE ROOSEVELT · CVN-71 · GULF OF MEXICO', 'Nimitz-class carrier 80 nm south of Galveston: <b>1,092 ft</b> flight deck, landing area angled <b>9°</b>, four wires, <b>27 kt</b> over the deck. Catch a wire in the Tomcat or the Brick Jet, or take anything else off the bow. Paddles is on the radio.'] };
 function syncLoc() {
   locSeg.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.l === settings.loc))); document.body.classList.toggle('moon', onMoon); document.body.classList.toggle('sea', atSea);
