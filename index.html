@@ -123,7 +123,9 @@ body.autotrim #trimCol{display:none!important}
 .seg button{font:10px/1 var(--f-ui);letter-spacing:.08em;height:32px;padding:0 11px;background:transparent;color:var(--muted);border:0;border-left:1px solid var(--line);cursor:pointer}
 .seg button:first-child{border-left:0}
 body.moon .earth-only,body.sea .land-only{display:none}
-.jet-only,.gear-only{display:none!important}
+.jet-only,.gear-only,.rev-only,.jato-only{display:none!important}
+body.rev .btn.rev-only,body.jato .btn.jato-only{display:block!important}
+body.jato #hint .jato-only{display:inline!important}
 body.gear .col.gear-only{display:flex!important}
 body.gear #hint .gear-only{display:inline!important}
 body.jet .btn.jet-only{display:block!important}
@@ -168,7 +170,7 @@ body:not(.touch) .touch-help{display:none}
 
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="rotate">Turn your phone sideways for the full view</div>
-<div id="hint">W S pitch · A D roll · Q E rudder · R F throttle · [ ] trim · B brakes · <span class="gear-only">G gear · </span><span class="jet-only">H hook · </span>C view · drag to look · Esc menu</div>
+<div id="hint">W S pitch · A D roll · Q E rudder · R F throttle · [ ] trim · B brakes · <span class="gear-only">G gear · </span><span class="jet-only">H hook · </span><span class="jato-only">J JATO · </span>C view · drag to look · Esc menu</div>
 
 <div id="rudRow" class="touch-only">
   <button class="btn" id="rudL" type="button" aria-label="Left rudder">◄ RUDDER</button>
@@ -184,6 +186,8 @@ body:not(.touch) .touch-help{display:none}
   <div class="col gear-only">
     <button class="btn" id="bGear" type="button">GEAR</button>
     <button class="btn jet-only" id="bHook" type="button">HOOK</button>
+    <button class="btn rev-only" id="bRev" type="button">REV</button>
+    <button class="btn jato-only" id="bJato" type="button">JATO</button>
   </div>
 </div>
 <div id="right" class="touch-only">
@@ -851,10 +855,11 @@ const TYPES = {
     eng: { turbo: true, P: 13.69e6, Ts: 160000, eta: .8, gov: 1021, idle: 735, cyl: 8, nb: 4, rev: .45 },
     tail: false, noseZ: -8.57, mainL: [-2.17, -2.75, 1.2], wheelR: .71, defl: [.25, .2], zeta: [.55, .6], toFlaps: 1,
     steer: 25, muLat: [.6, .5], muRoll: .045, muBrake: .4, sink: 4.6, prop: [9.9, 1.3, -4.0, 2.06], tip: [20.2, 2.15, 1.5], tailSkid: [0, -.6, 9.5], flapT: 10, retract: true, gearT: 14, gearCd: .012, vle: 168, belly: [0, -1.95, -1],
+    jato: { n: 8, F: 4448, burn: 15, cant: .1745, p: [0, -.7, 3.95] },   // eight 1,000 lb bottles for 15 s on the paratroop doors
     vRef: 70, kA: 4, kE: .4, a0: 0, roll: .85, rollD: 1.5, yaw: 1.2, slip: .1, pfac: .03, gyro: .02, trimRange: .6, atHi: 2.4,
     eye: [-.55, 1.6, -10.9], fov: 72, tilt: -.2, clearR: 3, scale: 2.8, discK: .5,
     placard: [['VSO', 86], ['VS', 99], ['VR', 95], ['VREF', 103], ['GEAR', 168], ['VMO', 320]],
-    tips: 'Four turboprops and 132 feet of wing, flown at an assault-landing weight of 101,000 lb. Flaps start at 50%. Full power, steer with rudder (it drives the nosewheel), rotate at about 95 knots, <b>G</b> for gear up once it is climbing, and let it climb away at 130 to 150. Approach with 100% flap at about 103 knots and plenty of power, gear down below 168 knots, touch down near 95, then throttle to idle and hold the brakes: the props go into reverse. Flaps no faster than 165 knots for 50% and 145 for 100%.',
+    tips: 'Four turboprops and 132 feet of wing, flown at an assault-landing weight of 101,000 lb. Flaps start at 50%. Full power, steer with rudder (it drives the nosewheel), rotate at about 95 knots, <b>G</b> for gear up once it is climbing, and let it climb away at 130 to 150. Approach with 100% flap at about 103 knots and plenty of power, gear down below 168 knots, touch down near 95, then keep pulling the throttle back past idle (hold <b>F</b>, or <b>REV</b> on a phone): the props go into reverse pitch, enough to back the airplane up. For a short field, <b>J</b> fires the eight JATO bottles: 8,000 lb more thrust for 15 seconds. Flaps no faster than 165 knots for 50% and 145 for 100%.',
     to: 'Flaps 50% · full power · rotate at 95 knots', stall: 'horn', reg: '74-1686'
   },
   f14: {
@@ -1320,7 +1325,18 @@ function buildModel130(t) {
   { const nz = t.noseZ, ny = my + .5, gn = pivot(0, -1.75, nz + .1, root); surf.noseG = gn;
     bar([0, 0, 0], [0, ny + 1.75, -.1], .09, 0x9ca1a5, gn, 8, 1, 'metal');
     for (const s of [-1, 1]) wheel(.5, .3, s * .23, ny + 1.75, -.1, gn); }
-  surf.gearAnim = () => { const k = 1 - ac.gearPos; for (const g of surf.mains) { g.position.y = k * .8; g.visible = ac.gearPos > .03; } surf.noseG.rotation.x = k * 1.65; surf.noseG.visible = ac.gearPos > .03; };
+  // JATO: four bottles a side on the paratroop doors, nozzles canted down and aft, with their flames
+  surf.jatoFl = [];
+  for (const s of [-1, 1]) for (const [dy, dz] of [[-.45, 3.3], [-.45, 4.6], [-.95, 3.3], [-.95, 4.6]]) {
+    const b = pivot(s * 2.32, dy, dz, root); b.rotation.x = t.jato.cant;
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(.15, .15, 1.2, 12).rotateX(Math.PI / 2), pmat(0xcac7bc)); c.castShadow = true; b.add(c);
+    const nz = new THREE.Mesh(new THREE.CylinderGeometry(.08, .13, .16, 10, 1, true).rotateX(Math.PI / 2).translate(0, 0, .68), pmat(0x2b2b2b)); b.add(nz);
+    const fl = new THREE.Group(); fl.position.z = .76; fl.visible = false; b.add(fl); surf.jatoFl.push(fl);
+    fl.add(new THREE.Mesh(new THREE.ConeGeometry(.17, 2.4, 12, 1, true).rotateX(-Math.PI / 2).translate(0, 0, 1.2), new THREE.MeshBasicMaterial({ color: 0xff9a40, transparent: true, opacity: .6, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })));
+    fl.add(new THREE.Mesh(new THREE.ConeGeometry(.1, 1.1, 10, 1, true).rotateX(-Math.PI / 2).translate(0, 0, .55), new THREE.MeshBasicMaterial({ color: 0xfff2c8, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })));
+  }
+  surf.gearAnim = () => { const on = ac.jatoF > 0; for (const f of surf.jatoFl) { f.visible = on; if (on) f.scale.set(1, 1, (.85 + .3 * Math.random()) * Math.min(1, ac.jatoF / 30000)); }
+    const k = 1 - ac.gearPos; for (const g of surf.mains) { g.position.y = k * .8; g.visible = ac.gearPos > .03; } surf.noseG.rotation.x = k * 1.65; surf.noseG.visible = ac.gearPos > .03; };
   // wing: constant 16 ft chord to the inboard engines, then tapering to the tip with a straight trailing edge.
   // Fowler flaps from the fuselage out to the ailerons
   const wy = 1.72, dih = .02, xb = 5.3, xt = t.span / 2, zl = x => x < xb ? -1.3 : -1.3 + (x - xb) / (xt - xb) * 2.28;
@@ -2811,7 +2827,7 @@ function updateCockpit(dt) {
   if (C.stick) { C.stick.rotation.set(inp.elev * .22, 0, -inp.ail * .25); if (C.stickF) C.stickF.rotation.copy(C.stick.rotation); }
   if (T.id === 'j3') { C.thr.position.z = .55 - ac.thr * .12; C.trim.rotation.x = ac.trim * 25; }
   if (T.id === 'c130') {
-    for (const L of C.thr) L.rotation.x = .45 - ac.thr * .9;
+    for (const L of C.thr) L.rotation.x = .45 - ac.thr * .9 + (ac.rev || 0) * .35;
     for (const y of [C.yoke, C.yoke2]) { y.rotation.z = -inp.ail * .7; y.position.z = -11.4 + inp.elev * .1; }
     C.flap.rotation.x = .35 - ac.flaps * .35; C.gear.rotation.x = ac.gear ? .5 : -.3;
   }
@@ -2911,8 +2927,8 @@ function engine(V, alt, thr, dt) {
     const p = .04 + .96 * thr, ps = Math.pow(sig, .7);
     const T1 = e.Ts * p * ps, T2 = e.eta * e.P * p * ps / Math.max(V, 1);
     thrust = Math.pow(Math.pow(T1, -3) + Math.pow(T2, -3), -1 / 3) - (1 - p) * e.Ts * .1 * clamp(V / 40, 0, 1.5);
-    if (dt && ac.onGround && thr < .02 && inp.brake) thrust = -e.rev * e.Ts * clamp((V - 1) / 5, 0, 1);   // ground range: reverse pitch
-    rpmT = ac.onGround && thr < .15 ? e.idle : e.gov;                                                // low-speed ground idle, then 100%
+    if (dt && ac.onGround && ac.rev > 0) thrust = -e.rev * e.Ts * ac.rev;   // ground range: reverse pitch, enough to back the airplane up
+    rpmT = ac.onGround && thr < .15 && !(ac.rev > 0) ? e.idle : e.gov;                                                // low-speed ground idle, then 100%
   } else if (e.cs) {
     ac.mp = lerp(11 + V * .01, pAmb - .8, thr);
     const pf = clamp((ac.mp - 9.5) / (29.1 - 9.5), 0, 1) * (1 + alt / 30000);   // less exhaust back pressure up high: about 8% more power at 8,000 ft for the same manifold pressure
@@ -2964,6 +2980,10 @@ function step(dt) {
     _F.x += -vx * qs * cd - 1.1 * beta * qs; _F.y += -vy * qs * cd; _F.z += -vz * qs * cd;
   }
   _F.z -= thrust;
+  // JATO: the bottles' thrust, canted down a little so the line passes near the centre of gravity
+  let jq = 0; ac.jatoF = 0;
+  if (ac.jatoT > 0 && t.jato) { const J = t.jato, k = Math.min(1, (J.burn - ac.jatoT) / .4) * Math.min(1, ac.jatoT / 1.2), Fj = J.n * J.F * k, c = Math.cos(J.cant), sn = Math.sin(J.cant);
+    _F.z -= Fj * c; _F.y += Fj * sn; jq = J.p[1] * -Fj * c - J.p[2] * Fj * sn; ac.jatoF = Fj; if (dt) ac.jatoT = Math.max(0, ac.jatoT - dt); }
   ac.fs.copy(_F);                     // aerodynamic + thrust specific force (contact added below), body axes
   _F.applyQuaternion(q);
   _F.y -= t.mass * G;
@@ -3002,7 +3022,7 @@ function step(dt) {
   ac.pos.addScaledVector(ac.vel, dt);
   // rotation: aerodynamic angular accelerations plus gear torques over inertia
   const f = qbar / t.qRef, vr = V / t.vRef, fc = f + t.slip * Math.max(0, thrust) / t.eng.Ts;
-  _tb.copy(_tq).applyQuaternion(_qi);
+  _tb.copy(_tq).applyQuaternion(_qi); _tb.x += jq;
   // the Tomcat has no g limiter, but a pilot flies to the 6.5 g limit, so the stick asks for no more lift than that
   let elev = inp.elev;
   if (t.gMax && V > 20 && fc > 1e-3) { const ag = (t.gMax * t.mass * G / (qbar * t.S) - t.cl0 - fl.cl) / t.k, an = (-3 * t.mass * G / (qbar * t.S) - t.cl0 - fl.cl) / t.k, dq = (3.2 * vr + .6) * G / (V * f * t.kA);
@@ -3171,7 +3191,7 @@ function resetCommon() {
   smokeOn = false; smoke.forEach(s => s.mesh.visible = false);
   ks.elev = ks.ail = ks.rud = 0; instr.hdgPrev = null;
   for (const w of T.wheels) { w.was = false; w.comp = 0; }
-  ac.gear = 1; ac.gearPos = 1; ac.hook = false; ac.hookPos = 0; ac.hookPrev = null; ac.sweep = 20; ac.spool = 0; ac.ab = 0; ac.cat = null; ac.trap = null; ac.bolter = false; ac.gMaxSeen = 1; ac.rampDev = undefined; ac.tdFpm = 0;
+  ac.gear = 1; ac.gearPos = 1; ac.hook = false; ac.hookPos = 0; ac.hookPrev = null; ac.sweep = 20; ac.spool = 0; ac.ab = 0; ac.cat = null; ac.trap = null; ac.bolter = false; ac.gMaxSeen = 1; ac.rev = 0; ac.jatoT = 0; ac.jatoUsed = false; ac.jatoF = 0; jsm.forEach(p => { p.t = 99; p.m.visible = false; }); ac.rampDev = undefined; ac.tdFpm = 0;
   lsoPass = null; if (T.sweep) sweepState(T);
 }
 function placeOnGround(u, v, hdgDeg, xyz) {
@@ -3233,7 +3253,7 @@ function resetApproach() {
 /* ---------- input ---------- */
 const keys = new Set(), ks = { elev: 0, ail: 0, rud: 0 };
 const stick = { x: 0, y: 0, id: null };
-let touchRud = 0, touchBrake = false;
+let touchRud = 0, touchBrake = false, touchRev = false, revRelease = false;
 const approach = (c, t, r, dt) => { const d = t - c, m = r * dt; return Math.abs(d) <= m ? t : c + Math.sign(d) * m; };
 const expo = v => Math.sign(v) * Math.pow(Math.abs(v), 1.5);
 const gpPrev = [];
@@ -3249,7 +3269,8 @@ function readGamepad(dt) {
     if (press(3)) cycleView();
     if (press(12)) ac.trim = clamp(ac.trim - .02, -T.trimRange, T.trimRange);
     if (press(13)) ac.trim = clamp(ac.trim + .02, -T.trimRange, T.trimRange);
-    return { ail: dz(p.axes[0] || 0), elev: dz(p.axes[1] || 0), rud: dz(p.axes[2] || 0), brake: b(1) > .5 };
+    if (press(5)) fireJato();
+    return { ail: dz(p.axes[0] || 0), elev: dz(p.axes[1] || 0), rud: dz(p.axes[2] || 0), brake: b(1) > .5, rev: b(6) > .5 && ac.thr === 0 };
   }
   return null;
 }
@@ -3264,6 +3285,15 @@ function gatherInput(dt) {
   if (keys.has('KeyR')) ac.thr = clamp(ac.thr + .45 * dt, 0, 1);
   if (keys.has('KeyF')) ac.thr = clamp(ac.thr - .45 * dt, 0, 1);
   const gp = readGamepad(dt);
+  // the ground range: on the ground, pulling the power levers back past flight idle runs the props into reverse pitch
+  if (T.eng.rev) {
+    let tg = ac.rev || 0;
+    if ((keys.has('KeyF') && ac.thr === 0) || (gp && gp.rev)) tg = 1;
+    if (keys.has('KeyR')) tg = 0;
+    if (touchRev) tg = 1; else if (revRelease) { tg = 0; if (!ac.rev) revRelease = false; }
+    ac.rev = ac.onGround && !ac.crashed ? approach(ac.rev || 0, tg, .8, dt) : 0;
+    if (ac.rev > 0) ac.thr = 0;
+  }
   inp.elev = clamp(ks.elev + expo(stick.y) + (gp ? gp.elev : 0), -1, 1);
   inp.ail = clamp(ks.ail + expo(stick.x) + (gp ? gp.ail : 0), -1, 1);
   inp.rud = clamp(ks.rud + (gp ? gp.rud : 0), -1, 1);
@@ -3294,6 +3324,12 @@ function setGear(down) {
   const vle = T.vle || 280; if (down && !ac.gear && ac.ias * KT > vle) { toast(`Too fast for the gear · below ${vle} KIAS`, 1800); return; }
   ac.gear = down ? 1 : 0;
 }
+function fireJato() {
+  if (!T.jato) { toast('No JATO on this airplane', 1400); return; }
+  if (ac.crashed || state !== 'flying') return;
+  if (ac.jatoUsed) { toast('The JATO bottles are spent', 1600); return; }
+  ac.jatoUsed = true; ac.jatoT = T.jato.burn; toast('JATO · eight bottles, 8,000 lb of thrust for 15 seconds', 2400);
+}
 function setHook(down) {
   if (!T.hook) { toast('No tailhook on this one', 1400); return; }
   ac.hook = down;
@@ -3319,6 +3355,7 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyC' && !e.repeat) cycleView();
   if (e.code === 'KeyG' && !e.repeat) setGear(!ac.gear);
   if (e.code === 'KeyH' && !e.repeat) setHook(!ac.hook);
+  if (e.code === 'KeyJ' && !e.repeat) fireJato();
 });
 window.addEventListener('keyup', e => keys.delete(e.code));
 window.addEventListener('blur', () => keys.clear());
@@ -3338,7 +3375,7 @@ function moveThr(e) { const r = thrEl.getBoundingClientRect(); ac.thr = clamp(1 
 thrEl.addEventListener('pointerdown', e => { thrId = e.pointerId; thrEl.setPointerCapture(e.pointerId); moveThr(e); e.preventDefault(); });
 thrEl.addEventListener('pointermove', e => { if (e.pointerId === thrId) moveThr(e); });
 thrEl.addEventListener('pointerup', () => thrId = null); thrEl.addEventListener('pointercancel', () => thrId = null);
-function syncThrottle() { const h = thrEl.clientHeight || 170; thrKnob.style.bottom = (ac.thr * (h - 26) + 2) + 'px'; thrFill.style.height = (ac.thr * 100) + '%'; thrKnob.textContent = T.eng.jet && ac.thr > .8 ? 'AB' : Math.round(ac.thr * 100);
+function syncThrottle() { const h = thrEl.clientHeight || 170; thrKnob.style.bottom = (ac.thr * (h - 26) + 2) + 'px'; thrFill.style.height = (ac.thr * 100) + '%'; thrKnob.textContent = T.eng.jet && ac.thr > .8 ? 'AB' : ac.rev > .01 ? 'REV' : Math.round(ac.thr * 100);
   if (T.retract) { $('bGear').classList.toggle('on', !!ac.gear); $('bHook').classList.toggle('on', !!ac.hook); } }
 function hold(el, on, off) {
   el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); el.classList.add('on'); on(); });
@@ -3349,6 +3386,8 @@ function repeat(el, fn) { let t = null; hold(el, () => { fn(); clearInterval(t);
 hold($('rudL'), () => touchRud = -1, () => touchRud = 0);
 hold($('rudR'), () => touchRud = 1, () => touchRud = 0);
 hold($('brk'), () => touchBrake = true, () => touchBrake = false);
+hold($('bRev'), () => { touchRev = true; revRelease = false; }, () => { touchRev = false; revRelease = true; });
+$('bJato').addEventListener('click', fireJato);
 $('flapUp').addEventListener('click', () => setFlaps(ac.flaps - 1));
 $('bGear').addEventListener('click', () => setGear(!ac.gear));
 $('bHook').addEventListener('click', () => setHook(!ac.hook));
@@ -3440,6 +3479,13 @@ const smoke = [];
 { const g = new THREE.IcosahedronGeometry(1.4, 1), m = new THREE.MeshLambertMaterial({ color: 0x3a3a3a, transparent: true, opacity: .85 });
   for (let i = 0; i < 14; i++) { const mesh = new THREE.Mesh(g, m); mesh.visible = false; scene.add(mesh); smoke.push({ mesh, t: 0, delay: i * .35 }); } }
 let smokeOn = false;
+// JATO smoke: puffs left behind in the air, growing and drifting downwind
+const jsm = []; let jsmT = 0, jsmI = 0;
+{ const g = new THREE.IcosahedronGeometry(1, 1); for (let i = 0; i < 200; i++) { const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: 0xe6e4de, transparent: true, opacity: 0, depthWrite: false })); m.visible = false; scene.add(m); jsm.push({ m, t: 99, w: new V3() }); } }
+function updateJatoSmoke(dt) {
+  if (ac.jatoF > 0 && T.jato) { jsmT -= dt; while (jsmT < 0) { jsmT += .09; for (const s of [-1, 1]) { const p = jsm[jsmI++ % jsm.length]; p.t = 0; p.m.position.set(s * 2.4, -1.0, 6.2).applyQuaternion(ac.q).add(ac.pos); p.w.copy(windVec(50)); p.m.visible = true; } } }
+  for (const p of jsm) { if (p.t > 9) { p.m.visible = false; continue; } p.t += dt; p.m.position.addScaledVector(p.w, dt); p.m.position.y += .5 * dt; p.m.scale.setScalar(1.1 + p.t * 1.4); p.m.material.opacity = .45 * (1 - p.t / 9) * Math.min(1, p.t * 4 + .3); }
+}
 
 /* ---------- toast ---------- */
 const toastEl = $('toast'); let toastT = null;
@@ -3490,13 +3536,14 @@ function updateAudio() {
   au.master.gain.setTargetAtTime(on ? (inside ? .55 : .4) : 0, t, .08);
   const fire = Math.max(1, ac.rpm / 60 * (T.eng.cyl || 4) / 2), blade = ac.rpm / 60 * (T.eng.nb || 2);
   au.o1.frequency.setTargetAtTime(fire, t, .05); au.o2.frequency.setTargetAtTime(fire * .5 + 1.1, t, .05); au.o3.frequency.setTargetAtTime(Math.max(1, blade), t, .05);
-  au.lp.frequency.setTargetAtTime(220 + ac.thr * 700 + (T.eng.cyl > 4 ? -60 : 0), t, .1);
-  au.eg.gain.setTargetAtTime(ac.crashed ? 0 : .08 + ac.thr * .16, t, .1); au.g3.gain.setTargetAtTime(ac.crashed ? 0 : .015 + ac.thr * .03, t, .1);
+  const pw = Math.max(ac.thr, (ac.rev || 0) * .8);
+  au.lp.frequency.setTargetAtTime(220 + pw * 700 + (T.eng.cyl > 4 ? -60 : 0), t, .1);
+  au.eg.gain.setTargetAtTime(ac.crashed ? 0 : .08 + pw * .16 + (ac.jatoF ? .12 : 0), t, .1); au.g3.gain.setTargetAtTime(ac.crashed ? 0 : .015 + pw * .03 + (ac.jatoF ? .05 : 0), t, .1);
   au.wg.gain.setTargetAtTime(Math.min(.3, (ac.V / 45) ** 2 * .18), t, .2);
   const jet = !!T.eng.jet && !ac.crashed, n2 = ac.rpm / 100;
   if (T.eng.jet) { au.eg.gain.setTargetAtTime(0, t, .1); au.g3.gain.setTargetAtTime(0, t, .1); }
   au.o4.frequency.setTargetAtTime(jet ? 900 + 3600 * n2 * n2 : 2400 + ac.rpm * .9 + ac.thr * 500, t, .3);
-  au.g4.gain.setTargetAtTime(T.eng.turbo && !ac.crashed ? (inside ? .004 : .01) + ac.thr * .006 : jet ? (inside ? .006 : .012) * (.4 + n2) : 0, t, .2);
+  au.g4.gain.setTargetAtTime(T.eng.turbo && !ac.crashed ? (inside ? .004 : .01) + pw * .006 : jet ? (inside ? .006 : .012) * (.4 + n2) : 0, t, .2);
   const tf = jet ? clamp(ac.thrust / T.eng.Tab, 0, 1) : 0;
   au.roar.gain.setTargetAtTime(jet ? (inside ? .1 : .22) * (.18 + 1.4 * tf) : 0, t, .15); au.abr.gain.setTargetAtTime(jet ? (inside ? .25 : .5) * (ac.ab || 0) : 0, t, .15); au.hiss.gain.setTargetAtTime(jet ? (inside ? .015 : .03) * n2 : 0, t, .2);
   const gs = Math.hypot(ac.vel.x, ac.vel.z); au.rg.gain.setTargetAtTime(ac.onGround && !ac.crashed ? Math.min(.5, gs / 25) : 0, t, .05);
@@ -3560,7 +3607,7 @@ acsel.innerHTML = Object.values(TYPES).map(t => `<button class="acb" type="butto
 function setType(id) {
   T = TYPES[id] || TYPES.j3; settings.ac = T.id; saveSettings();
   for (const k in models) models[k].root.visible = k === T.id;
-  document.body.classList.toggle('jet', !!T.eng.jet); document.body.classList.toggle('gear', !!T.retract); syncRunwayLabels();
+  document.body.classList.toggle('jet', !!T.eng.jet); document.body.classList.toggle('gear', !!T.retract); document.body.classList.toggle('rev', !!T.eng.rev); document.body.classList.toggle('jato', !!T.jato); syncRunwayLabels();
   acsel.querySelectorAll('.acb').forEach(b => b.setAttribute('aria-checked', String(b.dataset.ac === T.id)));
   $('plcap').textContent = `${T.name.toUpperCase()} · V-SPEEDS · ${T.unit === 'kt' ? 'KIAS' : 'MPH IAS'}`;
   $('placard').innerHTML = T.placard.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
@@ -3636,6 +3683,7 @@ function frame(now) {
   { const k = T.discK || 1; for (const pr of S.props || (S.prop ? [S.prop] : [])) { pr.g.rotation.z += ac.rpm / 60 * Math.PI * 2 * dt * (ac.rpm > 900 * k ? .085 : 1); pr.disc.visible = ac.rpm > 900 * k; pr.g.visible = ac.rpm < 1100 * k; } }
   // windsock swings toward where the wind is going and fills with speed (15 kt for full)
   { const wv = windVec(6), ws = Math.hypot(wv.x, wv.z) * KT; sock.rotation.set(-(Math.PI / 2) * (1 - clamp(ws / 15, .08, 1)) * .9, Math.atan2(-wv.x, -wv.z) + Math.PI, 0, 'YXZ'); }
+  updateJatoSmoke(dt);
   if (smokeOn) smoke.forEach((s, i) => { s.t += dt; if (s.t < 0) return; const life = s.t % 5; s.mesh.visible = true; s.mesh.position.set(ac.pos.x + Math.sin(i * 2.1) * life * 1.5, ac.pos.y + life * 6, ac.pos.z + life * 2); s.mesh.scale.setScalar(1 + life * 1.5); });
   updateCamera(dt);
   fillTrees(view === 'flightline' ? (camera.position.x + ac.pos.x) / 2 : ac.pos.x, view === 'flightline' ? (camera.position.z + ac.pos.z) / 2 : ac.pos.z);
