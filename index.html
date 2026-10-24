@@ -810,6 +810,20 @@ const TYPES = {
     placard: [['VS', 38], ['VX', 45], ['VY', 55], ['CRUISE', 73], ['VNE', 122]],
     tips: 'No flaps, no electrics, no stall warning. On the ground the nose blocks the view ahead, so look out the side or <b>S-turn</b> while taxiing. Full power, ease the tail up with a little forward stick, hold right rudder, and it flies itself off at about 45 mph. Glide at 55 to 60 mph, then hold it off for a three-point landing.',
     stall: null, reg: 'N92436'
+  },
+  c180: {
+    id: 'c180', name: 'Cessna 180K Skywagon', short: '180 Skywagon', blurb: '230 hp · 1978 · constant-speed prop, 40° flaps, left seat', unit: 'kt',
+    // 1978 Cessna data: 2,800 lb gross, 174 sq ft, 35 ft 10 in span, O-470-U at 230 hp and 2,400 rpm, 82 in McCauley constant-speed prop
+    mass: 1270, I: [2400, 3300, 1600], S: 16.2, span: 10.92, cl0: .3, k: 4.7, clmax: 1.5, cd0: .029, ki: .052,
+    flaps: [{ deg: 0, cl: 0, cd: 0, da: 0 }, { deg: 10, cl: .2, cd: .004, da: -.01 }, { deg: 20, cl: .4, cd: .012, da: -.02 }, { deg: 30, cl: .58, cd: .03, da: -.03 }, { deg: 40, cl: .7, cd: .055, da: -.035 }],
+    eng: { cs: true, P: 171500, Ts: 4000, eta: .8, gov: 2400, idle: 650, cyl: 6 },
+    tail: true, threePt: 11.5, mainL: [-1.25, -1.25, -.55], tailZ: 5.25, wheelR: .28, defl: [.1, .05], zeta: [.5, .5],
+    steer: 20, muLat: [.6, .45], muRoll: .04, muBrake: .35, sink: 3.4, prop: [0, 0, -2.5, 1.04], tip: [5.46, .98, -.3],
+    vRef: 40, kA: 9, kE: .34, a0: 0, roll: 2.2, rollD: 3.4, yaw: 2.0, slip: .32, pfac: .18, gyro: .4, trimRange: .4,
+    eye: [-.27, .7, .1], fov: 62, tilt: -.03,
+    placard: [['VSO', 48], ['VX', 61], ['VY', 78], ['CRUISE', 142], ['VNE', 171]],
+    tips: 'Six seats, 230 hp and a constant-speed prop: the blue knob stays full forward. Full power, hold right rudder, let the tail come up and it flies off at about 60 knots; climb at 78. Approach with 20° of flap at 70 knots, 65 over the fence, then a three-point landing, or wheel it on with a touch of forward yoke. The horn sounds a few knots above the stall. Flaps go down to 40° but not above 87 knots.',
+    stall: 'horn', reg: 'N2810K'
   }
 };
 // derived gear geometry: for taildraggers the tailwheel height comes from the three-point attitude
@@ -921,15 +935,16 @@ function cubWing(s, x0, x1, chord, zle, y, dih, color, p, tipR = .55, th = .19) 
   const m = new THREE.Mesh(g, new THREE.MeshPhongMaterial({ color, map: tex, specular: 0x262626, shininess: 22, emissive: new THREE.Color(color).multiplyScalar(.1) })); m.castShadow = m.receiveShadow = true; p.add(m); return m;
 }
 // the 72 in Sensenich: varnished wood, blades widest two-thirds out and twisted toward the root
-function prop(t, p) {
+function prop(t, p, metal) {
   const [x, y, z, R] = t.prop, g = pivot(x, y, z, p), blades = new THREE.Group(); g.add(blades);
-  const wood = new THREE.MeshPhongMaterial({ color: 0x7a4a24, specular: 0x8a6a4a, shininess: 60 });
+  const wood = metal ? new THREE.MeshPhongMaterial({ color: 0x8f9398, specular: 0x9a9a9a, shininess: 80 }) : new THREE.MeshPhongMaterial({ color: 0x7a4a24, specular: 0x8a6a4a, shininess: 60 });
   for (const s of [-1, 1]) {
     const sh = new THREE.Shape(); sh.moveTo(-.04, .06); sh.bezierCurveTo(-.075, R * .45, -.075, R * .8, -.035, R * .98); sh.quadraticCurveTo(0, R * 1.01, .03, R * .98); sh.bezierCurveTo(.06, R * .8, .055, R * .45, .04, .06); sh.lineTo(-.04, .06);
     const geo = new THREE.ExtrudeGeometry(sh, { depth: .022, bevelEnabled: true, bevelThickness: .008, bevelSize: .006, bevelSegments: 2, curveSegments: 10 }).translate(0, 0, -.011);
     const b = new THREE.Mesh(geo, wood); b.rotation.z = s > 0 ? 0 : Math.PI; b.rotation.y = .32 * s; b.castShadow = true; blades.add(b);
   }
   const hub = new THREE.Mesh(new THREE.CylinderGeometry(.075, .085, .14, 16).rotateX(Math.PI / 2), wood); blades.add(hub);
+  if (metal) { const sp = new THREE.Mesh(new THREE.ConeGeometry(.17, .38, 20).rotateX(-Math.PI / 2), pmat(WHITE, 'metal')); sp.position.z = -.2; blades.add(sp); }
   const fl = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, .03, 16).rotateX(Math.PI / 2), pmat(0x9a9c9e, 'metal')); fl.position.z = .08; g.add(fl);
   const disc = new THREE.Mesh(new THREE.CircleGeometry(R, 32), new THREE.MeshBasicMaterial({ color: 0x4a3a2a, transparent: true, opacity: .045, side: THREE.DoubleSide, depthWrite: false }));
   disc.position.z = -.02; g.add(disc);
@@ -1038,7 +1053,92 @@ function buildModel(t) {
   surf.prop = prop(t, root);
   models[t.id] = { root, surf };
 }
-for (const t of Object.values(TYPES)) buildModel(t);
+/* ---------- exterior model: Cessna 180K Skywagon ---------- */
+// 25 ft 9 in long, 35 ft 10 in span, 174 sq ft of tapered wing on a single strut each side, straight fin with a dorsal,
+// spring-steel main gear on bare 8.50-6 wheels. White over a dark blue cheat line, as on N2810K.
+const WHITE = 0xf1f1ec, NAVY = 0x1d3a6b, SKYBLUE = 0x5b86c2;
+// an all-metal tapered panel: chord and leading edge interpolate from x0 to x1; th is thickness as a fraction of chord
+function metalWing(s, x0, x1, c0, c1, zle0, zle1, y, dih, color, p, th = .12, tipR = .3) {
+  const g = new THREE.BoxGeometry(1, 1, 1, 30, 1, 12), a = g.attributes.position;
+  for (let i = 0; i < a.count; i++) {
+    const u = a.getX(i) + .5, v = a.getZ(i) + .5, top = a.getY(i) > 0, X = lerp(x0, x1, u);
+    const f = tipR > 0 ? clamp((X - (x1 - tipR)) / tipR, 0, 1) : 0, chord = lerp(c0, c1, u), zle = lerp(zle0, zle1, u);
+    const inset = chord * .5 * (1 - Math.sqrt(1 - f * f)) * .92, ch = chord - 2 * inset, t = th * chord * (1 - f * f * .7);
+    const yt = t * (1.4845 * Math.sqrt(v) - .63 * v - 1.758 * v * v + 1.4215 * v * v * v - .5075 * v * v * v * v), yb = -t * .18 * Math.sin(Math.PI * v);
+    a.setXYZ(i, X * s, y + X * dih + (top ? yt : yb), zle + inset + v * ch);
+  }
+  g.computeVertexNormals();
+  const m = new THREE.Mesh(g, pmat(color, 'metal')); m.castShadow = m.receiveShadow = true; p.add(m); return m;
+}
+function buildModel180(t) {
+  const root = new THREE.Group(), surf = {}; root.visible = false; plane.add(root);
+  const [mx, my, mz] = t.mainL;
+  // fuselage: spinner and cowl low on the nose, the windshield rising to a tall cabin, then the tail cone up to the fin
+  const secs = [[-2.55, .2, .2, -.05], [-2.45, .34, .34, -.05], [-2.1, .42, .4, 0], [-1.7, .47, .43, .03], [-1.35, .5, .45, .05],
+    [-.75, .55, .62, .25], [.55, .55, .62, .25], [1.4, .42, .47, .3], [2.6, .3, .36, .38], [3.8, .2, .28, .44], [4.9, .12, .2, .5], [5.45, .05, .12, .55]];
+  loft(secs.slice(0, 5), WHITE, root, 'metal');
+  loft(secs.slice(4), WHITE, root, 'metal');
+  // cowl: the two air inlets either side of the spinner, and the exhaust stacks under it
+  for (const s of [-1, 1]) { const m = new THREE.Mesh(new THREE.CircleGeometry(.11, 20).scale(1.2, .8, 1), pmat(0x0d0d0d)); m.position.set(s * .19, -.08, -2.541); m.rotation.y = Math.PI; root.add(m); }
+  for (const s of [-1, 1]) bar([s * .14, -.4, -1.9], [s * .12, -.47, -1.6], .03, 0x5a5a5a, root, 8, 1, 'metal');
+  // the cheat line: dark blue along the lower fuselage, rising toward the tail, with a thin light blue line under it
+  const cl = z => z < 1.2 ? .08 : lerp(.08, .42, (z - 1.2) / 4.1);
+  band(secs, -2.4, 5.3, cl, () => .07, NAVY, root);
+  band(secs, -2.4, 5.3, z => cl(z) - .06, () => .022, SKYBLUE, root);
+  const reg = canvasTex(512, 96, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = '#1d3a6b'; g.font = '700 70px "Barlow Condensed", Arial Narrow, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t.reg, w / 2, h / 2 + 4); });
+  band(secs, 1.9, 3.2, () => .64, () => .18, 0, root, [-1, 1], .006, reg);
+  // windows: two-piece windshield, door windows, and the rear side windows
+  const wz0 = -1.33, wz1 = -.75;
+  quad([-.5, .5, wz0], [.5, .5, wz0], [.53, .86, wz1], [-.53, .86, wz1], GLASS, root);
+  quad([.5, .5, wz0], [-.5, .5, wz0], [-.53, .86, wz1], [.53, .86, wz1], GLASS, root);
+  band(secs, -.72, .5, () => .68, () => .34, GLASS, root, [-1, 1], .006);
+  band(secs, .6, 1.3, () => .66, () => .28, GLASS, root, [-1, 1], .006);
+  for (const s of [-1, 1]) {
+    const X = (z, y) => (halfX(...secAt(secs, z).slice(1), y) + .009) * s;
+    for (const zz of [-.72, .5, .6, 1.3]) outside.push(bar([X(zz, .5), .5, zz], [X(zz, .86), .86, zz], .012, WHITE, root, 6));
+    outside.push(bar([X(-.72, .5), .5, -.72], [X(1.3, .5), .5, 1.3], .012, WHITE, root, 6));
+    outside.push(bar([s * .5, .5, wz0], [s * .53, .86, wz1], .014, WHITE, root, 6));
+    outside.push(bar([X(-.72, .34), .34, -.72], [X(-.72, -.15), -.15, -.72], .006, 0x9a9a96, root, 4), bar([X(.5, .34), .34, .5], [X(.5, -.15), -.15, .5], .006, 0x9a9a96, root, 4));  // door edges
+    box(.02, .02, .1, 0xb8babc, X(.3, .25) + .01, .25, .3, root, 'metal');       // door handle
+  }
+  // wing: 1.63 m root chord, constant to the strut, then tapering to the tip; big inboard flaps, ailerons outboard
+  const wy = .92, zle = -.95, dih = .03, c0 = 1.63, c1 = 1.12, xb = 2.7, xt = t.span / 2;
+  const chordAt = x => x < xb ? c0 : lerp(c0, c1, (x - xb) / (xt - xb));
+  for (const s of [-1, 1]) {
+    metalWing(s, .5, xb, c0 - .45, c0 - .45, zle, zle, wy, dih, WHITE, root, .12, 0);                      // inboard, ahead of the flap
+    metalWing(s, xb, xt, c0 - .4, c1 - .4, zle, zle, wy, dih, WHITE, root, .12, .3);                      // outboard, ahead of the aileron
+    const flap = pivot(s * .5, wy + .5 * dih + .012, zle + c0 - .45, root);
+    metalWing(s, 0, xb - .5, .45, .45, 0, 0, 0, dih, WHITE, flap, .1, 0);
+    (surf.flaps = surf.flaps || []).push(flap);
+    const ail = pivot(s * xb, wy + xb * dih + .012, zle + c0 - .4, root);
+    metalWing(s, 0, xt - xb, .4, .3, 0, -(c0 - c1), 0, dih, WHITE, ail, .1, .3);
+    surf[s < 0 ? 'ailL' : 'ailR'] = ail;
+    // the single lift strut from the lower longeron to the front spar, and the small fairing where it meets the wing
+    bar([s * .5, -.15, zle + .4], [s * 3.0, wy + 3.0 * dih - .04, zle + .42], .03, WHITE, root, 10, 2.4, 'metal');
+    // main gear: a flat spring-steel leg sweeping down from the belly to a bare wheel
+    bar([s * .3, -.4, mz], [s * -mx * .97, my + t.wheelR, mz], .034, WHITE, root, 8, 3, 'metal');
+    wheel(t.wheelR, .2, s * -mx, my + t.wheelR, mz, root);
+  }
+  // tail: tapered stabiliser with elevators, the straight fin with its dorsal, and the rudder
+  const [, ty, tz] = t.tailP, sy = .4;
+  { const st = new THREE.Mesh(tailGeo(tailShape([[0, 0], [1.7, .15], [1.82, .2, 1.82, .4], [1.82, .8], [0, .8]]), .05).rotateX(Math.PI / 2), pmat(WHITE, 'metal'));
+    for (const s of [-1, 1]) { const m = st.clone(); m.scale.x = s; m.position.set(0, sy, 4.3); m.castShadow = true; root.add(m); } }
+  surf.elev = pivot(0, sy, 5.1, root);
+  { const el = new THREE.Mesh(tailGeo(tailShape([[.08, 0], [1.78, 0], [1.82, .05, 1.78, .3], [.35, .4], [.08, .4]]), .04).rotateX(Math.PI / 2), pmat(WHITE, 'metal'));
+    for (const s of [-1, 1]) { const m = el.clone(); m.scale.x = s; m.position.z = .01; m.castShadow = true; surf.elev.add(m); } }
+  { const fin = new THREE.Mesh(tailGeo(tailShape([[0, 0], [1.3, 0], [1.3, 1.3], [1.25, 1.5, 1.0, 1.52], [.75, 1.5], [.45, .6]]), .05).rotateY(-Math.PI / 2), pmat(WHITE, 'metal'));
+    fin.position.set(0, sy + .05, 3.7); fin.castShadow = true; root.add(fin); }
+  surf.rud = pivot(0, sy + .05, 5.0, root);
+  { const rd = new THREE.Mesh(tailGeo(tailShape([[0, -.05], [.45, -.05], [.5, .3, .5, .9], [.5, 1.45, .2, 1.52], [0, 1.5]]), .04).rotateY(-Math.PI / 2), pmat(WHITE, 'metal'));
+    rd.castShadow = true; surf.rud.add(rd); }
+  band(secs, 3.0, 5.3, z => cl(z), () => .07, NAVY, root);   // the cheat line carries on under the stabiliser
+  // tailwheel on its long spring
+  bar([0, .4, tz - .5], [0, ty + .13, tz], .024, 0x2a2a2a, root, 6, 2.5, 'metal');
+  wheel(.13, .08, 0, ty + .13, tz, root);
+  surf.prop = prop(t, root, true);
+  models[t.id] = { root, surf };
+}
+for (const t of Object.values(TYPES)) (t.id === 'c180' ? buildModel180 : buildModel)(t);
 
 /* ---------- cockpits ---------- */
 // Each cabin is its own scene drawn after the world with the depth buffer cleared (near plane 2 cm), so nothing a hand's
@@ -1251,16 +1351,57 @@ function cabinJ3() {
   return { p, C };
 }
 cabins.j3 = cabinJ3();
+// the Skywagon cabin: a wide metal cabin with two front seats and a bench, a full-width panel under a glareshield,
+// yokes on columns, the throttle, prop and mixture knobs on the centre pedestal, and the manual flap handle on the floor
+function cabin180() {
+  const p = new THREE.Group(), C = {}, GREY = 0x33353a, TAN = 0xc9bfae, CARPET = 0x5a5147, SEAT = 0x8c6f4e;
+  cbox(1.04, .02, 2.3, CARPET, 0, -.37, .1, p);
+  for (const s of [-1, 1]) {
+    cquad([s * .52, -.36, -1.3], [s * .52, .5, -1.3], [s * .52, .5, 1.35], [s * .52, -.36, 1.35], TAN, p);   // door and side panels up to the sill
+    cbar([s * .52, .5, -1.3], [s * .52, .5, 1.35], .012, TAN, p);                                          // sill
+    cbar([s * .5, .5, -1.32], [s * .53, .87, -.75], .022, TAN, p);                                         // windshield post
+    for (const z of [-.72, .5, 1.3]) cbar([s * .53, .5, z], [s * .53, .88, z], .018, TAN, p);               // door and rear window posts
+    cbar([s * .53, .88, -.75], [s * .53, .88, 1.35], .014, TAN, p);                                         // cant rail
+  }
+  { const h = cbox(1.08, .02, 2.1, 0xd9d6cf, 0, .9, .3, p); h.material = cfab(0xd9d6cf); }                   // headliner, lit like the real pale vinyl
+  for (const s of [-1, 1]) { const w = cbox(1.3, .015, 1.63, 0xe6e6e1, s * 1.19, .915, -.135, p); w.material = cfab(0xdadad5); } // wing roots overhead, white in their own shadow
+  cquad([-.53, .5, 1.35], [.53, .5, 1.35], [.53, .88, 1.35], [-.53, .88, 1.35], TAN, p);                     // baggage bulkhead
+  cbox(1.06, .5, .03, GREY, 0, .35, -.94, p); cbox(1.08, .035, .3, 0x151515, 0, .615, -1.05, p);             // panel and glareshield
+  C.panel = mkPanel(1.02, .5, 0, .35, -.922, p);
+  cquad([-.53, .1, -.93], [.53, .1, -.93], [.53, -.36, -1.3], [-.53, -.36, -1.3], GREY, p);                 // kick panel down to the firewall
+  for (const s of [-1, 1]) {
+    const y = new THREE.Group(); y.position.set(s * .27, .33, -.62); p.add(y);
+    cbar([0, 0, 0], [0, 0, -.3], .018, 0x1c1c1c, y); cbar([-.16, 0, 0], [.16, 0, 0], .009, 0x1c1c1c, y);
+    for (const g of [-1, 1]) { cbar([g * .16, 0, 0], [g * .19, .11, -.02], .009, 0x1c1c1c, y); cbar([g * .19, .11, -.02], [g * .1, .14, -.03], .009, 0x1c1c1c, y); }
+    cbox(.07, .05, .025, 0x202020, 0, .02, -.01, y);
+    if (s < 0) C.yoke = y;
+  }
+  cbox(.22, .3, .16, 0x1e1f21, 0, .05, -.86, p);
+  for (const [x, c] of [[-.06, 0x111111], [0, 0x1a4fa0], [.06, 0xb3251c]]) { cbar([x, .12, -.78], [x, .12, -.66], .006, 0x8a8c8e, p); const k = cbox(.03, .03, .03, c, x, .12, -.72, p); if (x < 0) C.thr = k; }
+  C.trim = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .015, 20).rotateZ(Math.PI / 2), cmat(0x151515)); C.trim.position.set(-.12, .05, -.72); p.add(C.trim);
+  C.flap = new THREE.Group(); C.flap.position.set(0, -.3, -.2); p.add(C.flap); cbar([0, 0, 0], [0, .42, 0], .011, 0x2a2a2a, C.flap); cbox(.025, .06, .025, 0x111111, 0, .44, 0, C.flap);
+  for (const s of [-1, 1]) { cbox(.42, .06, .44, SEAT, s * .27, -.14, .25, p); cbox(.42, .5, .06, SEAT, s * .27, .12, .5, p); cbox(.36, .12, .05, 0x6e5538, s * .27, .42, .5, p); }
+  cbox(.98, .06, .44, SEAT, 0, -.14, 1.05, p); cbox(.98, .5, .06, SEAT, 0, .12, 1.3, p);
+  cbar([0, .5, -1.32], [0, .87, -.75], .01, TAN, p); cbox(.08, .06, .06, 0x151515, 0, .77, -.93, p);         // windshield centre strip with the compass on it
+  return { p, C };
+}
+cabins.c180 = cabin180();
 for (const k in cabins) { cabins[k].p.visible = false; cockpit.add(cabins[k].p); }
 
 /* ---------- panel artwork ---------- */
 // Positions are cabin coordinates in metres (the same frame as the 3D cabin). Static faces are drawn once to a background canvas.
 const ASI = {
-  j3: { unit: 'MPH', lo: 40, max: 140, step: 20, green: [38, 100], red: 122 }
+  j3: { unit: 'MPH', lo: 40, max: 140, step: 20, green: [38, 100], red: 122 },
+  c180: { unit: 'KNOTS', lo: 40, max: 200, step: 20, white: [48, 87], green: [56, 143], red: 171 }
 };
-const TACH = { j3: { max: 3000, green: [1600, 2300], red: 2300, ccw: true } };
+const TACH = { j3: { max: 3000, green: [1600, 2300], red: 2300, ccw: true }, c180: { max: 3500, green: [2000, 2400], red: 2400, ccw: false } };
 const LAYOUT = {
   j3: { R: .027, items: [['tach', -.225, .355], ['asi', -.115, .355], ['compJ3', 0, .375, .036], ['alt', .115, .355], ['oil', .225, .355]] },
+  // the Skywagon: six-pack in front of the pilot, clock and flap indicator inboard of it, engine cluster across the top of the
+  // right side, radios in the centre stack, switches and breakers along the bottom
+  c180: { R: .035, items: [['asi', -.41, .5], ['ai', -.3, .5], ['alt', -.19, .5], ['tc', -.41, .41], ['dg', -.3, .41], ['vsi', -.19, .41],
+    ['clock', -.09, .5, .025], ['flapInd', -.09, .37], ['switches', -.44, .2],
+    ['tach', .08, .5, .03], ['mp', .16, .5, .03], ['fuel', .24, .5, .025], ['oil', .31, .5, .025], ['amps', .38, .5, .02], ['suction', .44, .5, .02], ['radios180', 0, 0]] },
 };
 function drawStatic(id) {
   const P = cabins[id].C.panel, g = P.bgg, W = P.bg.width, Hh = P.bg.height, L = LAYOUT[id];
@@ -1612,6 +1753,7 @@ function updateCockpit(dt) {
   const C = cabins[T.id].C;
   if (C.stick) { C.stick.rotation.set(inp.elev * .22, 0, -inp.ail * .25); if (C.stickF) C.stickF.rotation.copy(C.stick.rotation); }
   if (T.id === 'j3') { C.thr.position.z = .55 - ac.thr * .12; C.trim.rotation.x = ac.trim * 25; }
+  if (T.id === 'c180') { C.thr.position.z = -.7 - ac.thr * .07; C.yoke.rotation.z = -inp.ail * .8; C.yoke.position.z = -.62 + inp.elev * .08; C.trim.rotation.x = ac.trim * 20; C.flap.rotation.x = -T.flaps[ac.flaps].deg * D2R * 1.4; }
   panelT += dt;
   if (panelT > 1 / 30) {
     panelT = 0;
@@ -1650,7 +1792,7 @@ const ac = { pos: new V3(), vel: new V3(), q: new Q(), w: new V3(), thr: 0, flap
   rpm: 0, mp: 29, thrust: 0, stalled: false, stallSide: 1, alpha: 0, beta: 0, ias: 0, V: 0, airTime: 0, runT: 0, fs: new V3(0, G, 0), contacts: 0,
   roll0: null, td: null, tdAnn: false };
 const inp = { elev: 0, ail: 0, rud: 0, brake: false };
-let trimHold = null;
+let trimHold = null, holdHdg = null;
 const _vb = new V3(), _qi = new Q(), _F = new V3(), _L = new V3(), _dq = new Q(), _ax = new V3(), _r = new V3(), _P = new V3(), _vp = new V3(), _ww = new V3(),
   _fw = new V3(), _lat = new V3(), _fc = new V3(), _tq = new V3(), _tb = new V3(), _air = new V3(), _up = new V3(), _tmp = new V3();
 function liftCoef(a, fl) {
@@ -1835,7 +1977,7 @@ function resetRunway() {
   ac.thr = 0; ac.flaps = 0;
   ac.trim = solveTrim(T.vRef * .78, ac.flaps, 0).trim; ac.onGround = true; ac.rpm = T.eng.idle; ac.runT = 0;
 }
-const APPR = { j3: { v: 25.5, fl: 0 } };
+const APPR = { j3: { v: 25.5, fl: 0 }, c180: { v: 36, fl: 2 } };
 function resetApproach() {
   resetCommon();
   const r = windRunway(), A = APPR[T.id], gp = 4.2 * D2R, d = 1500, aim = 60, s = r === '20' ? 1 : -1;
@@ -1896,13 +2038,21 @@ function gatherInput(dt) {
     }
   } else trimHold = null;
   // auto rudder (on by default for touch): the stick steers on the ground and the ball is kept centred in the air
-  if (settings.autoRud && Math.abs(inp.rud) < .05) inp.rud = ac.onGround ? clamp(inp.ail + 1.2 * ac.w.y, -1, 1) : clamp(ac.beta * 6, -1, 1);
+  if (settings.autoRud && Math.abs(inp.rud) < .05) {
+    if (ac.onGround) {
+      // on the ground it also holds the heading you had when you let the stick go, so P-factor doesn't walk the roll off the runway
+      const gs = Math.hypot(ac.vel.x, ac.vel.z), h = heading();
+      if (holdHdg === null || gs < 1.5 || Math.abs(inp.ail) > .1) holdHdg = h;
+      let e = holdHdg - h; if (e > 180) e -= 360; if (e < -180) e += 360;
+      inp.rud = clamp(inp.ail + 1.2 * ac.w.y + e * .12, -1, 1);
+    } else { holdHdg = null; inp.rud = clamp(ac.beta * 6, -1, 1); }
+  } else holdHdg = null;
   inp.brake = keys.has('KeyB') || keys.has('Space') || touchBrake || !!(gp && gp.brake);
 }
 function setFlaps(n) {
   if (T.flaps.length < 2) { toast('The J-3 has no flaps · slip it to steepen the descent', 2200); return; }
   n = clamp(n, 0, T.flaps.length - 1);
-  if (n > ac.flaps && ac.ias * KT > (T.id === 'c172' ? 85 : T.id === 'c180' ? 87 : 66)) { toast(`Too fast for flaps · below ${T.id === 'c172' ? '85 KIAS' : T.id === 'c180' ? '100 mph' : '75 mph'}`, 1800); return; }
+  if (n > ac.flaps && ac.ias * KT > (T.id === 'c180' ? 87 : 66)) { toast(`Too fast for flaps · below ${T.id === 'c180' ? '87 KIAS' : '75 mph'}`, 1800); return; }
   ac.flaps = n;
 }
 const HANDLED = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space']);
