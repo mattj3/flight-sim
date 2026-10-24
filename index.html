@@ -45,6 +45,8 @@ body.noflaps #flapUp,body.noflaps #flapDn,body.noflaps #hud .cell:nth-child(5){d
 .btn:active,.btn.on{color:var(--cub);border-color:var(--cub)}
 .btn:focus-visible,.tog:focus-visible,.primary:focus-visible,.secondary:focus-visible,.acb:focus-visible,.seg button:focus-visible{outline:2px solid var(--cub);outline-offset:2px}
 
+#xhair{position:fixed;left:0;top:0;width:44px;height:44px;margin:-22px 0 0 -22px;pointer-events:none;display:none;z-index:3}
+#xhair svg{display:block;filter:drop-shadow(0 0 2px rgba(0,0,0,.8))}
 #toast{position:fixed;left:50%;top:22%;transform:translate(-50%,-6px);font:600 22px/1.25 var(--f-ui);color:var(--fg);text-shadow:0 2px 3px #000,0 0 14px rgba(0,0,0,.7);text-align:center;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;max-width:88vw;text-wrap:balance}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 #hint{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font:11px/1.3 var(--f-ui);color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:5px 9px;pointer-events:none;white-space:nowrap}
@@ -177,6 +179,7 @@ body:not(.touch) .touch-help{display:none}
   <button class="btn" id="bMenu" type="button">MENU</button>
 </div>
 
+<div id="xhair" aria-hidden="true"><svg width="44" height="44" viewBox="0 0 44 44" fill="none" stroke="#ff5a3c" stroke-width="2"><circle cx="22" cy="22" r="11"/><path d="M22 2v10M22 32v10M2 22h10M32 22h10"/><circle cx="22" cy="22" r="1.5" fill="#ff5a3c" stroke="none"/></svg></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="rotate">Turn your phone sideways for the full view</div>
 <div id="hint">W S pitch · A D roll · Q E rudder · R F throttle · [ ] trim · B brakes · <span class="gear-only">G gear · </span><span class="jet-only">H hook · </span><span class="jato-only" id="hJato">J JATO · </span><span class="guns-only">K guns · </span>C view · drag to look · Esc menu</div>
@@ -263,6 +266,7 @@ body:not(.touch) .touch-help{display:none}
       <button class="tog" id="tAuto" type="button" aria-pressed="false">AUTO RUDDER</button>
       <button class="tog" id="tTrim" type="button" aria-pressed="false">AUTO TRIM</button>
       <button class="tog" id="tGuns" type="button" aria-pressed="false">MACHINE GUNS</button>
+      <button class="tog" id="bFireBind" type="button" aria-pressed="false">SET FIRE BUTTON</button>
     </div>
     <dl class="help key-help">
       <dt>W S · ↑ ↓</dt><dd>Nose down / nose up (stick or yoke)</dd>
@@ -272,7 +276,7 @@ body:not(.touch) .touch-help{display:none}
       <dt>[ ]</dt><dd>Trim nose down / nose up, with auto trim off (menu). Auto trim holds the speed you were flying when you let go of the stick</dd>
       <dt>B · Space</dt><dd>Brakes. Hold rudder to brake one side</dd>
       <dt>G · H</dt><dd>F-14: gear up / down, tailhook up / down. Throttle past 80% lights the afterburners</dd>
-      <dt>K</dt><dd>Fire the guns, with machine guns on (menu). A USB flight stick's trigger and a gamepad's LB fire them too. Only the F-14's M61 is real; the others are for fun</dd>
+      <dt>K</dt><dd>Fire the guns, with machine guns on (menu). A USB flight stick's trigger and a gamepad's LB fire them too, or pick any joystick button with SET FIRE BUTTON. Only the F-14's M61 is real; the others are for fun</dd>
       <dt>C · drag</dt><dd>Change view · drag the view to look around the cabin</dd>
     </dl>
     <dl class="help touch-help">
@@ -3488,24 +3492,36 @@ let touchRud = 0, touchBrake = false, touchRev = false, revRelease = false, touc
 const approach = (c, t, r, dt) => { const d = t - c, m = r * dt; return Math.abs(d) <= m ? t : c + Math.sign(d) * m; };
 const expo = v => Math.sign(v) * Math.pow(Math.abs(v), 1.5);
 const gpPrev = [];
+// the fire button: a USB flight stick's trigger (button 0 on a non-standard mapping), a gamepad's LB, or whatever button was set in
+// the menu with SET FIRE BUTTON. It is read on every connected device, because some sticks show up as more than one
+function gunButton(p, i) {
+  const fb = settings.fireBtn, on = settings.guns || kids;
+  if (!on) return false;
+  if (fb) return p.id === fb.id && i === fb.b;
+  return p.mapping === 'standard' ? i === 4 : i === 0;
+}
 function readGamepad(dt) {
   let pads; try { pads = navigator.getGamepads ? navigator.getGamepads() : []; } catch (e) { return null; }
-  for (const p of pads || []) {
+  let out = null, gun = false;
+  // fly with the device that was touched most recently, so a second device (a throttle unit, a phantom pad) doesn't hide the stick
+  pads = Array.from(pads || []).filter(p => p && p.connected).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  for (const p of pads) {
     if (!p || !p.connected) continue;
-    const dz = v => Math.abs(v) < .08 ? 0 : v, b = i => p.buttons[i] ? p.buttons[i].value : 0;
+    for (let i = 0; i < p.buttons.length; i++) if (gunButton(p, i) && p.buttons[i] && (p.buttons[i].pressed || p.buttons[i].value > .5)) gun = true;
+    if (out) continue;
+    const dz = v => Math.abs(v) < .08 ? 0 : v, b = i => p.buttons[i] && !gunButton(p, i) ? p.buttons[i].value : 0;
     const press = i => { const now = b(i) > .5, was = gpPrev[i]; gpPrev[i] = now; return now && !was; };
     ac.thr = clamp(ac.thr + (b(7) - b(6)) * .6 * dt, 0, 1);
-    // a USB flight stick reports a non-standard mapping and its trigger is button 0: with guns on it fires them instead of lowering flaps
-    const stickTrig = p.mapping !== 'standard' && (settings.guns || kids);
-    if (!stickTrig && press(0)) setFlaps(ac.flaps + 1);
+    if (press(0)) setFlaps(ac.flaps + 1);
     if (press(2)) setFlaps(ac.flaps - 1);
     if (press(3)) cycleView();
     if (press(12)) ac.trim = clamp(ac.trim - .02, -T.trimRange, T.trimRange);
     if (press(13)) ac.trim = clamp(ac.trim + .02, -T.trimRange, T.trimRange);
     if (press(5)) fireJato();
-    return { ail: dz(p.axes[0] || 0), elev: dz(p.axes[1] || 0), rud: dz(p.axes[2] || 0), brake: b(1) > .5, rev: b(6) > .5 && ac.thr === 0, gun: b(4) > .5 || (stickTrig && b(0) > .5) };
+    out = { ail: dz(p.axes[0] || 0), elev: dz(p.axes[1] || 0), rud: dz(p.axes[2] || 0), brake: b(1) > .5, rev: b(6) > .5 && ac.thr === 0 };
   }
-  return null;
+  if (out) out.gun = gun; else if (gun) out = { ail: 0, elev: 0, rud: 0, brake: false, rev: false, gun };
+  return out;
 }
 function gatherInput(dt) {
   const k = c => keys.has(c) ? 1 : 0;
@@ -3857,6 +3873,19 @@ function updateTargets(dt) {
   }
 }
 
+// the crosshair: where the guns are pointing, 400 m out along the gun line (the drop over that range is under a metre)
+const xhEl = $('xhair'); let xhOn = false;
+function updateXhair() {
+  let on = (settings.guns || kids) && state === 'flying' && !ac.crashed;
+  if (on) {
+    const g = gunOf(T); let mx = 0, my = 0; for (const p of g.p) { mx += p[0] / g.p.length; my += p[1] / g.p.length; }
+    camera.updateMatrixWorld(); _gp.set(mx, my, -400).applyQuaternion(ac.q).add(ac.pos).project(camera);
+    on = _gp.z < 1 && Math.abs(_gp.x) < 1.1 && Math.abs(_gp.y) < 1.1;
+    if (on) xhEl.style.transform = `translate(${(_gp.x + 1) / 2 * innerWidth}px, ${(1 - _gp.y) / 2 * innerHeight}px)`;
+  }
+  if (on !== xhOn) { xhOn = on; xhEl.style.display = on ? 'block' : 'none'; }
+}
+
 /* ---------- toast ---------- */
 const toastEl = $('toast'); let toastT = null;
 function toast(msg, ms = 2800) { toastEl.textContent = msg; toastEl.classList.toggle('show', !!msg); clearTimeout(toastT); if (msg) toastT = setTimeout(() => toastEl.classList.remove('show'), ms); }
@@ -3976,6 +4005,28 @@ document.body.classList.toggle('autorud', !!settings.autoRud);
 bindToggle('tTrim', 'autoTrim', () => document.body.classList.toggle('autotrim', !!settings.autoTrim));
 document.body.classList.toggle('autotrim', !!settings.autoTrim);
 bindToggle('tGuns', 'guns', () => { syncGuns(); toast(settings.guns ? (T.gun ? `Guns armed · ${T.gun.name}, the real thing` : 'Guns armed · two .50 cals, just for fun') + ' · K to fire' : 'Guns off', 2200); });
+// SET FIRE BUTTON: press any button on a joystick or gamepad within 10 seconds and that button fires the guns; press it again to go back to the default
+let bindT = null;
+function syncFireBind(msg) { const fb = settings.fireBtn; $('bFireBind').textContent = msg || (fb ? `FIRE · BUTTON ${fb.b + 1}` : 'SET FIRE BUTTON'); $('bFireBind').setAttribute('aria-pressed', String(!!fb)); }
+$('bFireBind').addEventListener('click', () => {
+  if (bindT) return;
+  if (settings.fireBtn) { delete settings.fireBtn; saveSettings(); syncFireBind(); toast('Fire button back to the default · stick trigger or gamepad LB', 2200); return; }
+  const snap = () => { const m = new Map(); try { for (const p of navigator.getGamepads() || []) if (p && p.connected) m.set(p.index, p.buttons.map(x => x.pressed || x.value > .5)); } catch (e) {} return m; };
+  let base = snap(), t0 = performance.now();
+  syncFireBind(base.size ? 'PRESS A JOYSTICK BUTTON…' : 'PRESS A BUTTON · NO JOYSTICK SEEN YET');
+  bindT = setInterval(() => {
+    let pads = []; try { pads = navigator.getGamepads() || []; } catch (e) {}
+    for (const p of pads) {
+      if (!p || !p.connected) continue;
+      const was = base.get(p.index);
+      if (!was) { base.set(p.index, p.buttons.map(x => x.pressed || x.value > .5)); continue; }
+      const i = p.buttons.findIndex((x, k) => (x.pressed || x.value > .5) && !was[k]);
+      if (i >= 0) { clearInterval(bindT); bindT = null; settings.fireBtn = { id: p.id, b: i }; saveSettings(); syncFireBind(); toast(`Button ${i + 1} on ${p.id.replace(/\s*\(.*$/, '').slice(0, 40)} fires the guns`, 2600); return; }
+    }
+    if (performance.now() - t0 > 10000) { clearInterval(bindT); bindT = null; syncFireBind(); toast('No button pressed · the browser only sees a joystick after you press one of its buttons', 3200); }
+  }, 40);
+});
+syncFireBind();
 function syncGuns() { document.body.classList.toggle('guns', !!settings.guns || kids); }
 syncGuns();
 bindToggle('tData', 'data', () => document.body.classList.toggle('nodata', !settings.data));
@@ -4074,6 +4125,7 @@ function frame(now) {
   updateTargets(dt);
   if (smokeOn) smoke.forEach((s, i) => { s.t += dt; if (s.t < 0) return; const life = s.t % 5; s.mesh.visible = true; s.mesh.position.set(ac.pos.x + Math.sin(i * 2.1) * life * 1.5, ac.pos.y + life * 6, ac.pos.z + life * 2); s.mesh.scale.setScalar(1 + life * 1.5); });
   updateCamera(dt);
+  updateXhair();
   fillTrees(view === 'flightline' ? (camera.position.x + ac.pos.x) / 2 : ac.pos.x, view === 'flightline' ? (camera.position.z + ac.pos.z) / 2 : ac.pos.z);
   sky.position.copy(camera.position); moonSky.position.copy(camera.position);
   if (atSea) updateCarrier(dt);
