@@ -3001,6 +3001,14 @@ function step(dt) {
   _F.applyQuaternion(q);
   _F.y -= t.mass * G;
   // gear: each wheel is a spring-damper with tyre friction
+  // at sea the deck crew chocks the wheels once you stop at idle: 27 knots over the deck would otherwise blow a light
+  // airplane backwards. Power up (or go into reverse) and the chocks come out
+  if (atSea && dt) {
+    const gs = Math.hypot(ac.vel.x, ac.vel.z), idle = ac.thr < .15 && !(ac.rev > 0) && !ac.cat && !ac.trap && !ac.crashed;
+    if (!ac.onGround && ac.airTime > 1) ac.flew = true;
+    if (ac.chock && (!idle || !ac.onGround)) ac.chock = false;
+    else if (!ac.chock && idle && ac.onGround && gs < 1) { ac.chock = true; if (ac.flew) toast('Chocks in · the deck crew holds you against the wind · add power to taxi', 2600); }
+  }
   _tq.set(0, 0, 0); _ww.copy(w).applyQuaternion(q); let contacts = 0, mainC = 0, impact = 0;
   const steerA = inp.rud * t.steer * D2R / (t.steerV ? 1 + Math.hypot(ac.vel.x, ac.vel.z) / t.steerV : 1);
   for (const wh of t.wheels) {
@@ -3020,10 +3028,10 @@ function step(dt) {
     _fw.set(-Math.sin(sa), 0, -Math.cos(sa)).applyQuaternion(q); _fw.addScaledVector(n, -_fw.dot(n)).normalize();
     _lat.copy(_fw).cross(n);
     const vf = _vp.dot(_fw), vl = _vp.dot(_lat);
-    let bk = 0; if (inp.brake && wh.main) bk = wh.side < 0 ? clamp(1 - inp.rud, 0, 1) : clamp(1 + inp.rud, 0, 1);
+    let bk = ac.chock && wh.main ? 1 : 0; if (inp.brake && wh.main) bk = wh.side < 0 ? clamp(1 - inp.rud, 0, 1) : clamp(1 + inp.rud, 0, 1);
     const mu = surfaceMu(_P.x, _P.z) + bk * t.muBrake * (wx.grip || 1);
     const castor = wh.steer === 1 && Math.abs(vf) > 1 && Math.abs(Math.atan2(vl, Math.abs(vf))) > (t.steer + 12) * D2R ? .15 : 1;   // a tailwheel swung past its steering range unlocks and castors: the ground loop
-    const Ff = -mu * N * clamp(vf / .25, -1, 1), Fl = -wh.mu * castor * (wx.grip || 1) * N * clamp(vl / .35, -1, 1);
+    const Ff = -mu * N * clamp(vf / (ac.chock && wh.main ? .02 : .25), -1, 1), Fl = -wh.mu * castor * (wx.grip || 1) * N * clamp(vl / (ac.chock && wh.main ? .02 : .35), -1, 1);
     _fc.copy(n).multiplyScalar(N).addScaledVector(_fw, Ff).addScaledVector(_lat, Fl);
     _F.add(_fc); _tq.add(_tmp.copy(_r).cross(_fc));
     _tmp.copy(_fc).applyQuaternion(_qi); ac.fs.add(_tmp);
@@ -3204,7 +3212,7 @@ function resetCommon() {
   smokeOn = false; smoke.forEach(s => s.mesh.visible = false);
   ks.elev = ks.ail = ks.rud = 0; instr.hdgPrev = null;
   for (const w of T.wheels) { w.was = false; w.comp = 0; }
-  ac.gear = 1; ac.gearPos = 1; ac.hook = false; ac.hookPos = 0; ac.hookPrev = null; ac.sweep = 20; ac.spool = 0; ac.ab = 0; ac.cat = null; ac.trap = null; ac.bolter = false; ac.gMaxSeen = 1; ac.rev = 0; ac.jatoT = 0; ac.jatoShots = 0; ac.jatoF = 0; jsm.forEach(p => { p.t = 99; p.m.visible = false; }); ac.rampDev = undefined; ac.tdFpm = 0;
+  ac.gear = 1; ac.gearPos = 1; ac.hook = false; ac.hookPos = 0; ac.hookPrev = null; ac.sweep = 20; ac.spool = 0; ac.ab = 0; ac.cat = null; ac.trap = null; ac.bolter = false; ac.gMaxSeen = 1; ac.rev = 0; ac.jatoT = 0; ac.jatoShots = 0; ac.chock = false; ac.flew = false; ac.jatoF = 0; jsm.forEach(p => { p.t = 99; p.m.visible = false; }); ac.rampDev = undefined; ac.tdFpm = 0;
   lsoPass = null; if (T.sweep) sweepState(T);
 }
 function placeOnGround(u, v, hdgDeg, xyz) {
