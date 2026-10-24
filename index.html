@@ -123,7 +123,10 @@ body.autotrim #trimCol{display:none!important}
 .seg button{font:10px/1 var(--f-ui);letter-spacing:.08em;height:32px;padding:0 11px;background:transparent;color:var(--muted);border:0;border-left:1px solid var(--line);cursor:pointer}
 .seg button:first-child{border-left:0}
 body.moon .earth-only,body.sea .land-only{display:none}
-.jet-only{display:none!important}
+.jet-only,.gear-only{display:none!important}
+body.gear .col.gear-only{display:flex!important}
+body.gear #hint .gear-only{display:inline!important}
+body.jet .btn.jet-only{display:block!important}
 body.jet .cell.jet-only,body.jet .col.jet-only{display:flex!important}
 body.jet #hint .jet-only{display:inline!important}
 body.ab #thrFill{background:linear-gradient(to top,rgba(255,120,40,.6),rgba(255,160,60,.15))}
@@ -165,7 +168,7 @@ body:not(.touch) .touch-help{display:none}
 
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="rotate">Turn your phone sideways for the full view</div>
-<div id="hint">W S pitch · A D roll · Q E rudder · R F throttle · [ ] trim · B brakes · <span class="jet-only">G gear · H hook · </span>C view · drag to look · Esc menu</div>
+<div id="hint">W S pitch · A D roll · Q E rudder · R F throttle · [ ] trim · B brakes · <span class="gear-only">G gear · </span><span class="jet-only">H hook · </span>C view · drag to look · Esc menu</div>
 
 <div id="rudRow" class="touch-only">
   <button class="btn" id="rudL" type="button" aria-label="Left rudder">◄ RUDDER</button>
@@ -178,9 +181,9 @@ body:not(.touch) .touch-help{display:none}
     <button class="btn" id="flapDn" type="button">FLAP ▼</button>
     <button class="btn" id="brk" type="button">BRAKE</button>
   </div>
-  <div class="col jet-only">
+  <div class="col gear-only">
     <button class="btn" id="bGear" type="button">GEAR</button>
-    <button class="btn" id="bHook" type="button">HOOK</button>
+    <button class="btn jet-only" id="bHook" type="button">HOOK</button>
   </div>
 </div>
 <div id="right" class="touch-only">
@@ -847,11 +850,11 @@ const TYPES = {
     flaps: [{ deg: 0, cl: 0, cd: 0, da: 0, lab: 'UP' }, { deg: 18, cl: .45, cd: .02, da: -.025, lab: '50%', vfe: 165 }, { deg: 36, cl: .78, cd: .09, da: -.045, lab: '100%', vfe: 145 }],
     eng: { turbo: true, P: 13.69e6, Ts: 160000, eta: .8, gov: 1021, idle: 735, cyl: 8, nb: 4, rev: .45 },
     tail: false, noseZ: -8.57, mainL: [-2.17, -2.75, 1.2], wheelR: .71, defl: [.25, .2], zeta: [.55, .6], toFlaps: 1,
-    steer: 25, muLat: [.6, .5], muRoll: .045, muBrake: .4, sink: 4.6, prop: [9.9, 1.3, -4.0, 2.06], tip: [20.2, 2.15, 1.5], tailSkid: [0, -.6, 9.5], flapT: 10,
+    steer: 25, muLat: [.6, .5], muRoll: .045, muBrake: .4, sink: 4.6, prop: [9.9, 1.3, -4.0, 2.06], tip: [20.2, 2.15, 1.5], tailSkid: [0, -.6, 9.5], flapT: 10, retract: true, gearT: 14, gearCd: .012, vle: 168, belly: [0, -1.95, -1],
     vRef: 70, kA: 4, kE: .4, a0: 0, roll: .85, rollD: 1.5, yaw: 1.2, slip: .1, pfac: .03, gyro: .02, trimRange: .6, atHi: 2.4,
     eye: [-.55, 1.6, -10.9], fov: 72, tilt: -.2, clearR: 3, scale: 2.8, discK: .5,
-    placard: [['VSO', 86], ['VS', 99], ['VR', 95], ['VREF', 103], ['VMO', 320]],
-    tips: 'Four turboprops and 132 feet of wing, flown at an assault-landing weight of 101,000 lb. Flaps start at 50%. Full power, steer with rudder (it drives the nosewheel), rotate at about 95 knots and let it climb away at 130 to 150. Approach with 100% flap at about 103 knots and plenty of power, touch down near 95, then throttle to idle and hold the brakes: the props go into reverse. Flaps no faster than 165 knots for 50% and 145 for 100%.',
+    placard: [['VSO', 86], ['VS', 99], ['VR', 95], ['VREF', 103], ['GEAR', 168], ['VMO', 320]],
+    tips: 'Four turboprops and 132 feet of wing, flown at an assault-landing weight of 101,000 lb. Flaps start at 50%. Full power, steer with rudder (it drives the nosewheel), rotate at about 95 knots, <b>G</b> for gear up once it is climbing, and let it climb away at 130 to 150. Approach with 100% flap at about 103 knots and plenty of power, gear down below 168 knots, touch down near 95, then throttle to idle and hold the brakes: the props go into reverse. Flaps no faster than 165 knots for 50% and 145 for 100%.',
     to: 'Flaps 50% · full power · rotate at 95 knots', stall: 'horn', reg: '74-1686'
   },
   f14: {
@@ -1310,11 +1313,14 @@ function buildModel130(t) {
   const [mx, my, mz] = t.mainL;
   for (const s of [-1, 1]) {
     loft([[-2.6, .05, .08, -1.35], [-1.9, .42, .6, -1.38], [3.6, .48, .66, -1.38], [4.9, .08, .15, -1.3]], HERC_GREY, pivot(s * 2.0, 0, 0, root));
-    for (const dz of [-.72, .72]) wheel(t.wheelR, .5, s * -mx, my + t.wheelR, mz + dz, root);
+    const gm = new THREE.Group(); root.add(gm); (surf.mains = surf.mains || []).push(gm);
+    for (const dz of [-.72, .72]) wheel(t.wheelR, .5, s * -mx, my + t.wheelR, mz + dz, gm);
   }
-  { const nz = t.noseZ, ny = my + .5;
-    bar([0, -1.75, nz + .1], [0, ny, nz], .09, 0x9ca1a5, root, 8, 1, 'metal');
-    for (const s of [-1, 1]) wheel(.5, .3, s * .23, ny, nz, root); }
+  // the mains rise straight up into the pods; the nose leg swings forward into the fuselage
+  { const nz = t.noseZ, ny = my + .5, gn = pivot(0, -1.75, nz + .1, root); surf.noseG = gn;
+    bar([0, 0, 0], [0, ny + 1.75, -.1], .09, 0x9ca1a5, gn, 8, 1, 'metal');
+    for (const s of [-1, 1]) wheel(.5, .3, s * .23, ny + 1.75, -.1, gn); }
+  surf.gearAnim = () => { const k = 1 - ac.gearPos; for (const g of surf.mains) { g.position.y = k * .8; g.visible = ac.gearPos > .03; } surf.noseG.rotation.x = k * 1.65; surf.noseG.visible = ac.gearPos > .03; };
   // wing: constant 16 ft chord to the inboard engines, then tapering to the tip with a straight trailing edge.
   // Fowler flaps from the fuselage out to the ailerons
   const wy = 1.72, dih = .02, xb = 5.3, xt = t.span / 2, zl = x => x < xb ? -1.3 : -1.3 + (x - xb) / (xt - xb) * 2.28;
@@ -1852,6 +1858,8 @@ function cabin130() {
     cbar([0, 0, 0], [0, .15, 0], .007, 0x9a9da0, L); cbox(.036, .026, .022, 0xb3251c, 0, .16, 0, L);
   }
   C.flap = new THREE.Group(); C.flap.position.set(.25, .97, -11.25); p.add(C.flap);
+  C.gear = new THREE.Group(); C.gear.position.set(-.33, .7, -11.88); p.add(C.gear);
+  cbar([0, 0, 0], [0, -.09, .07], .008, 0x9a9da0, C.gear, 5); { const w = new THREE.Mesh(new THREE.TorusGeometry(.024, .009, 6, 14), cmat(0xd8d6cc)); w.position.set(0, -.1, .075); w.rotation.y = Math.PI / 2; C.gear.add(w); }
   cbar([0, 0, 0], [0, .16, 0], .008, 0x9a9da0, C.flap); cbox(.06, .022, .045, 0xe8e6dc, 0, .17, 0, C.flap);
   { const m = staticPanel(.5, .5, 600, (g, W, H, px) => switchPanel(g, W, H, px, 'RADIOS · AUTOPILOT · TRIM', 7)); m.position.set(0, .945, -10.95); m.rotation.x = -Math.PI / 2 + .12; p.add(m); }
   // yokes on columns rising from the floor
@@ -2069,7 +2077,7 @@ const LAYOUT = {
     ['asi', -.72, 1.1], ['ai', -.55, 1.1, .052], ['alt', -.38, 1.1], ['tc', -.72, .96], ['dg', -.55, .96, .052], ['vsi', -.38, .96], ['clock', -.9, 1.12, .026], ['vor', -.9, .97, .032],
     ['asi', .38, 1.1], ['ai', .55, 1.1, .052], ['alt', .72, 1.1], ['tc', .38, .96], ['dg', .55, .96, .052], ['vsi', .72, .96], ['clock', .9, 1.12, .026], ['vor2', .9, .97, .032],
     ...[-.165, -.055, .055, .165].flatMap(x => [['torq', x, 1.15, .036], ['tit', x, 1.065, .036], ['rpm130', x, .98, .036], ['ff', x, .895, .036]]),
-    ['flapInd', .33, .8]] },
+    ['flapInd', .33, .8], ['gear130', -.33, .8]] },
   // the Tomcat: AoA, airspeed, altitude and vertical speed down the left, the VDI over the HSD in the middle, the two
   // engines' rpm, turbine temperature, fuel flow and nozzle position on the right, then g, wing sweep and fuel
   f14: { R: .032, items: [['aoaU', -.35, .61, .03], ['asiJ', -.35, .505, .036], ['alt', -.35, .395, .036], ['vsi', -.25, .315, .027], ['ai', -.225, .61, .028], ['clock', -.36, .3, .02], ['gearInd', -.215, .475],
@@ -2147,6 +2155,7 @@ function drawStatic(id) {
       case 'sweep': face(g, cx, cy, r); for (let v = 20; v <= 75; v += 5) { const a = -2.1 + (v - 20) / 55 * 4.2; tick(g, cx, cy, r, a, v % 10 ? .08 : .15, r * .04); if (v % 20 === 0 || v === 75) label(g, cx, cy, r * .64, a, String(v), r * .2); } text(g, cx, cy + r * .45, 'WING SWEEP', r * .12, '#b8b6ad'); break;
       case 'vdi': crtBezel(g, cx, cy, .2 * px, .2 * px, 'VDI'); break;
       case 'hsd': crtBezel(g, cx, cy, .2 * px, .17 * px, 'HSD'); break;
+      case 'gear130': text(g, cx, cy - .035 * px, 'GEAR', .012 * px, '#cfccc0'); for (const [dx, lb] of [[-.025, 'L'], [0, 'N'], [.025, 'R']]) text(g, cx + dx * px, cy + .03 * px, lb, .008 * px, '#cfccc0'); break;
       case 'gearInd': g.fillStyle = '#0b0b0b'; g.fillRect(cx - .03 * px, cy - .045 * px, .06 * px, .09 * px); text(g, cx, cy + .056 * px, 'GEAR · HOOK', .0075 * px, '#e8e6dc'); break;
     }
   }
@@ -2773,6 +2782,8 @@ function drawPanel(id) {
       case 'sweep': needle(g, cx, cy, r, -2.1 + ((ac.sweep || 20) - 20) / 55 * 4.2, .86, r * .09); break;
       case 'vdi': drawVDI(g, cx, cy, .2 * PX, .2 * PX, pitch, roll, instr.dg); break;
       case 'hsd': drawHSD(g, cx, cy, .2 * PX, .17 * PX, instr.dg); break;
+      case 'gear130': { const gd = ac.gearPos > .99, tr = ac.gearPos > .01 && !gd;
+        for (const dx of [-.025, 0, .025]) { g.fillStyle = gd ? '#3ddc5a' : tr ? '#e0352b' : '#1c1c1c'; g.beginPath(); g.arc(cx + dx * PX, cy + .005 * PX, .008 * PX, 0, 7); g.fill(); } break; }
       case 'gearInd': {
         const gd = ac.gearPos > .99, tr = ac.gearPos > .01 && !gd;
         for (const [dx, dy] of [[0, -.025], [-.015, .0], [.015, .0]]) { g.fillStyle = gd ? '#e8e6dc' : tr ? '#2a2a2a' : '#141414'; g.beginPath(); g.arc(cx + dx * PX, cy + dy * PX, .008 * PX, 0, 7); g.fill(); if (tr) { g.strokeStyle = '#e8e6dc'; g.lineWidth = 2; for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(cx + (dx - .008 + k * .004) * PX, cy + (dy - .008) * PX); g.lineTo(cx + (dx - .004 + k * .004) * PX, cy + (dy + .008) * PX); g.stroke(); } } }
@@ -2802,7 +2813,7 @@ function updateCockpit(dt) {
   if (T.id === 'c130') {
     for (const L of C.thr) L.rotation.x = .45 - ac.thr * .9;
     for (const y of [C.yoke, C.yoke2]) { y.rotation.z = -inp.ail * .7; y.position.z = -11.4 + inp.elev * .1; }
-    C.flap.rotation.x = .35 - ac.flaps * .35;
+    C.flap.rotation.x = .35 - ac.flaps * .35; C.gear.rotation.x = ac.gear ? .5 : -.3;
   }
   if (T.id === 'f14') {
     for (const L of C.thr) L.position.z = -5.94 - ac.thr * .2;
@@ -2943,7 +2954,7 @@ function step(dt) {
   const fl = flapNow(t, dt), cl = liftCoef(alpha, fl), stalled = alpha > t.stallA - fl.deg * .0012 + .02;
   const hw = Math.max(.3, agl + .8), ge = (16 * hw / t.span) ** 2, phi = ge / (1 + ge);
   let cd = t.cd0 + t.ki * phi * cl * cl + fl.cd + (stalled ? .1 : 0);
-  if (t.retract) cd += .02 * ac.gearPos;
+  if (t.retract) cd += (t.gearCd || .02) * ac.gearPos;
   if (t.sweep) { const sf = (ac.sweep - 20) / 48, mc = .74 + .1 * sf; cd += .035 * sstep(mc, 1.05, mach) * (1 - .25 * sstep(1.2, 2, mach)) * (1.3 - .5 * sf); }
   _F.set(0, 0, 0);
   if (V > .5) {
@@ -3007,7 +3018,7 @@ function step(dt) {
   if (wl > 1e-7) { _ax.copy(w).multiplyScalar(1 / wl); _dq.setFromAxisAngle(_ax, wl * dt); q.multiply(_dq).normalize(); }
   ac.stalled = stalled; ac.alpha = alpha; ac.beta = beta; ac.V = V; ac.ias = V * Math.sqrt(sig); ac.contacts = contacts;
   ac.nz = ac.fs.y / 9.81; if (!contacts) ac.gMaxSeen = Math.max(ac.gMaxSeen || 1, ac.nz);
-  if (t.retract) { ac.gearPos = approach(ac.gearPos, ac.gear, .2, dt); ac.hookPos = approach(ac.hookPos, ac.hook ? 1 : 0, 1.2, dt); }
+  if (t.retract) { ac.gearPos = approach(ac.gearPos, ac.gear, 1 / (t.gearT || 5), dt); ac.hookPos = approach(ac.hookPos, ac.hook ? 1 : 0, 1.2, dt); }
   if (atSea) { const c = carrierCheck(dt, mainC); if (c) return crash(c); }
   if (!ac.runT) ac.runT = 0; ac.runT += dt;
   // hard points: the prop arc, wingtips, belly
@@ -3146,7 +3157,7 @@ function autoTrimTarget(v) {
 const AT_KP = .02, AT_KD = .08;
 function solveTrim(v, flaps, gamma) {
   const fl = T.flaps[flaps], qS = .5 * 1.225 * v * v * T.S, cl = T.mass * G * Math.cos(gamma) / qS;
-  const a = (cl - T.cl0 - fl.cl) / T.k, cd = T.cd0 + T.ki * cl * cl + fl.cd + (T.retract ? .02 * ac.gear : 0), D = qS * cd, need = D - T.mass * G * Math.sin(gamma);
+  const a = (cl - T.cl0 - fl.cl) / T.k, cd = T.cd0 + T.ki * cl * cl + fl.cd + (T.retract ? (T.gearCd || .02) * ac.gear : 0), D = qS * cd, need = D - T.mass * G * Math.sin(gamma);
   let thr = 0; for (let k = 0; k <= 100; k++) { if (engine(v, FIELD, k / 100, 0) >= need) { thr = k / 100; break; } thr = 1; }
   const tf = Math.max(0, engine(v, FIELD, thr, 0)) / T.eng.Ts, f = .5 * 1.225 * v * v / T.qRef, fc = f + T.slip * tf;
   const trim = clamp(((a - T.a0 - fl.da) * f / fc) / T.kE, -T.trimRange, T.trimRange);
@@ -3278,9 +3289,9 @@ function gatherInput(dt) {
   inp.brake = (keys.has('KeyB') || keys.has('Space') || touchBrake || !!(gp && gp.brake)) && !(ac.cat && ac.cat.st === 'stroke');
 }
 function setGear(down) {
-  if (!T.retract) { toast(T.id === 'c130' ? 'The gear lever is not modelled · it stays down' : 'Fixed gear', 1600); return; }
+  if (!T.retract) { toast('Fixed gear', 1600); return; }
   if (!down && ac.onGround) { toast('Weight on wheels · the gear stays down on the ground', 1800); return; }
-  if (down && !ac.gear && ac.ias * KT > 280) { toast('Too fast for the gear · below 280 KIAS', 1800); return; }
+  const vle = T.vle || 280; if (down && !ac.gear && ac.ias * KT > vle) { toast(`Too fast for the gear · below ${vle} KIAS`, 1800); return; }
   ac.gear = down ? 1 : 0;
 }
 function setHook(down) {
@@ -3549,7 +3560,7 @@ acsel.innerHTML = Object.values(TYPES).map(t => `<button class="acb" type="butto
 function setType(id) {
   T = TYPES[id] || TYPES.j3; settings.ac = T.id; saveSettings();
   for (const k in models) models[k].root.visible = k === T.id;
-  document.body.classList.toggle('jet', !!T.eng.jet); syncRunwayLabels();
+  document.body.classList.toggle('jet', !!T.eng.jet); document.body.classList.toggle('gear', !!T.retract); syncRunwayLabels();
   acsel.querySelectorAll('.acb').forEach(b => b.setAttribute('aria-checked', String(b.dataset.ac === T.id)));
   $('plcap').textContent = `${T.name.toUpperCase()} · V-SPEEDS · ${T.unit === 'kt' ? 'KIAS' : 'MPH IAS'}`;
   $('placard').innerHTML = T.placard.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
@@ -3621,6 +3632,7 @@ function frame(now) {
   if (S.ailR) { S.ailR.rotation.x = -inp.ail * .32; S.ailL.rotation.x = inp.ail * .32; }
   if (S.flaps && !S.anim) { const fd = T.flaps[ac.flaps].deg * D2R; for (const f of S.flaps) f.rotation.x = approach(f.rotation.x, fd, .6, dt); }
   if (S.anim) S.anim(dt);
+  if (S.gearAnim) S.gearAnim();
   { const k = T.discK || 1; for (const pr of S.props || (S.prop ? [S.prop] : [])) { pr.g.rotation.z += ac.rpm / 60 * Math.PI * 2 * dt * (ac.rpm > 900 * k ? .085 : 1); pr.disc.visible = ac.rpm > 900 * k; pr.g.visible = ac.rpm < 1100 * k; } }
   // windsock swings toward where the wind is going and fills with speed (15 kt for full)
   { const wv = windVec(6), ws = Math.hypot(wv.x, wv.z) * KT; sock.rotation.set(-(Math.PI / 2) * (1 - clamp(ws / 15, .08, 1)) * .9, Math.atan2(-wv.x, -wv.z) + Math.PI, 0, 'YXZ'); }
