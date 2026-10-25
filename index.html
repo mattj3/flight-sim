@@ -101,8 +101,11 @@ body.autotrim #trimCol{display:none!important}
 .status{margin:0;font:700 14px/1.3 var(--f-ui);color:var(--red)}
 .plcap{font:10px/1 var(--f-ui);color:var(--muted);letter-spacing:.12em;margin-bottom:-8px}
 .acsel{display:grid;grid-template-columns:1fr;gap:8px}
-.acb{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:10px 12px;border-radius:7px;background:transparent;color:var(--fg);border:1px solid var(--line);cursor:pointer;text-align:left;font:700 20px/1 var(--f-display);letter-spacing:.02em;text-transform:uppercase;min-width:0}
+.acb{display:flex;flex-direction:row;align-items:center;gap:12px;padding:10px 12px;border-radius:7px;background:transparent;color:var(--fg);border:1px solid var(--line);cursor:pointer;text-align:left;font:700 20px/1 var(--f-display);letter-spacing:.02em;text-transform:uppercase;min-width:0}
 .acb small{font:11px/1.3 var(--f-ui);color:var(--muted);letter-spacing:0;text-transform:none}
+.acb .act{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+.acb .aci{flex:none;width:96px;height:54px;border-radius:5px;background:rgba(255,255,255,.04);object-fit:contain}
+@media (max-width:420px){.acb .aci{width:72px;height:40px}}
 .acb[aria-checked="true"]{border-color:var(--cub);color:var(--cub);background:rgba(242,183,5,.07)}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 .primary,.secondary{flex:1 1 200px;height:46px;border-radius:7px;font:700 12px/1 var(--f-ui);letter-spacing:.06em;cursor:pointer}
@@ -4100,7 +4103,37 @@ $('tLite').setAttribute('aria-pressed', LITE); if (LITE) $('tHigh').disabled = t
 $('tLite').addEventListener('click', () => { location.search = LITE ? '' : '?lite'; });
 document.body.classList.toggle('nodata', !settings.data);
 const acsel = $('acsel');
-acsel.innerHTML = Object.values(TYPES).map(t => `<button class="acb" type="button" role="radio" data-ac="${t.id}" aria-checked="false">${t.short}<small>${t.blurb}</small></button>`).join('');
+acsel.innerHTML = Object.values(TYPES).map(t => `<button class="acb" type="button" role="radio" data-ac="${t.id}" aria-checked="false"><img class="aci" alt="" width="96" height="54"><span class="act">${t.short}<small>${t.blurb}</small></span></button>`).join('');
+// menu pictures: each plane's own exterior model, drawn once from the front-left quarter into a small transparent image
+function planeThumbs() {
+  const W = 192, H = 108, SS = 3, w = W * SS, h = H * SS;
+  const rt = new THREE.WebGLRenderTarget(w, h), ts = new THREE.Scene(), cam = new THREE.PerspectiveCamera(24, W / H, .5, 2000);
+  ts.add(new THREE.HemisphereLight(0xeef2f6, 0x5a5646, .8)); const sun = new THREE.DirectionalLight(0xfff0dc, .75); sun.position.set(-4, 6, -3); ts.add(sun);
+  const px = new Uint8Array(w * h * 4), big = document.createElement('canvas'), small = document.createElement('canvas');
+  big.width = w; big.height = h; small.width = W; small.height = H;
+  const bg = big.getContext('2d'), sg = small.getContext('2d'), img = bg.createImageData(w, h);
+  const dir = new V3(-1, .5, -1.25).normalize(), box = new THREE.Box3(), c = new V3(), sz = new V3();
+  const cc = renderer.getClearColor(new THREE.Color()), ca = renderer.getClearAlpha(), sv = renderer.shadowMap.autoUpdate;
+  renderer.setClearColor(0, 0); renderer.shadowMap.autoUpdate = false;
+  for (const t of Object.values(TYPES)) {
+    const m = models[t.id], root = m && m.root; if (!root) continue;
+    const vis = root.visible; root.visible = true; ts.add(root); root.updateMatrixWorld(true);
+    box.setFromObject(root); box.getCenter(c); box.getSize(sz);
+    const r = .5 * Math.max(sz.x, sz.z * .9, sz.y * 1.6);
+    cam.position.copy(c).addScaledVector(dir, r / Math.tan(12 * D2R) * .75); cam.lookAt(c); cam.updateMatrixWorld();
+    renderer.setRenderTarget(rt); renderer.clear(); renderer.render(ts, cam); renderer.readRenderTargetPixels(rt, 0, 0, w, h, px);
+    plane.add(root); root.visible = vis;
+    // flip the rows, find the drawn plane's outline, then crop to it so every plane fills its picture the same way
+    let x0 = w, x1 = -1, y0 = h, y1 = -1;
+    for (let y = 0; y < h; y++) { img.data.set(px.subarray((h - 1 - y) * w * 4, (h - y) * w * 4), y * w * 4);
+      for (let x = 0; x < w; x++) if (img.data[(y * w + x) * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
+    bg.putImageData(img, 0, 0); sg.clearRect(0, 0, W, H); if (x1 < 0) continue;
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1, k = Math.min(W * .94 / bw, H * .9 / bh);
+    sg.drawImage(big, x0, y0, bw, bh, (W - bw * k) / 2, (H - bh * k) / 2, bw * k, bh * k);
+    const el = acsel.querySelector(`[data-ac="${t.id}"] .aci`); if (el) el.src = small.toDataURL('image/png');
+  }
+  renderer.setRenderTarget(null); renderer.setClearColor(cc, ca); renderer.shadowMap.autoUpdate = sv; rt.dispose();
+}
 function setType(id) {
   T = TYPES[id] || TYPES.j3; settings.ac = T.id; saveSettings();
   for (const k in models) models[k].root.visible = k === T.id;
@@ -4213,6 +4246,7 @@ applyQuality();
 resize();
 updateHUD();
 openMenu('title');
+try { planeThumbs(); } catch (e) { console.warn('plane thumbnails', e); }
 requestAnimationFrame(frame);
 })();
 </script>
