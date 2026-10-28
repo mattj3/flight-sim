@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0c130e">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23f2b705'/%3E%3Cpath d='M30 6h7l-6 22h16l-3 6H26l-5 24h-6l5-24-8 2 3-7 7-2z' fill='%23141414'/%3E%3C/svg%3E">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -37,7 +38,7 @@ button{font-family:inherit}
 .v{font:18px/1 var(--f-num);color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap}
 body.in-cockpit:not(.touch) #hud,body.nodata #hud{display:none}
 /* phones: the panel gauges are too small to read, so keep a compact speed and altitude readout in the cockpit view */
-body.touch.in-cockpit #hud .cell:nth-child(n+3){display:none}
+body.touch.in-cockpit #hud .cell:nth-child(n+3):not(.guns-only):not(.kids-only){display:none}
 body.noflaps #flapUp,body.noflaps #flapDn,body.noflaps #hud .cell:nth-child(5){display:none}
 
 #topBtns{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));display:flex;gap:6px}
@@ -57,7 +58,7 @@ body:not(.touch) .touch-only{display:none!important}
 #thr{position:relative;width:54px;height:170px;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;touch-action:none}
 #thrFill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,rgba(242,183,5,.4),rgba(242,183,5,.08))}
 #thrKnob{position:absolute;left:4px;right:4px;height:22px;background:var(--fg);border-radius:3px;color:var(--pine);font:13px/22px var(--f-num);text-align:center}
-#thrLb{position:absolute;top:7px;left:0;right:0;text-align:center;font:9px/1 var(--f-ui);color:var(--muted);letter-spacing:.08em}
+#thrLb{position:absolute;top:7px;left:0;right:0;text-align:center;font:8px/1 var(--f-ui);color:var(--muted);letter-spacing:.03em}
 .col{display:flex;flex-direction:column;gap:6px}
 #right{position:fixed;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;align-items:flex-end}
 #stick{position:relative;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(242,183,5,.07),rgba(12,19,14,.6) 72%);border:1px solid var(--line);touch-action:none}
@@ -71,7 +72,7 @@ body:not(.touch) .touch-only{display:none!important}
 #thr{background:rgba(12,19,14,.5)}
 body.autorud #rudRow{display:none!important}
 body.autotrim #trimCol{display:none!important}
-#rotate{display:none;position:fixed;left:50%;top:calc(58px + env(safe-area-inset-top,0px));transform:translateX(-50%);font:12px/1.3 var(--f-ui);color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 11px;pointer-events:none;white-space:nowrap}
+#rotate{display:none;position:fixed;left:50%;top:calc(104px + env(safe-area-inset-top,0px));transform:translateX(-50%);font:12px/1.3 var(--f-ui);color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 11px;pointer-events:none;white-space:nowrap}
 @media (orientation:portrait) and (max-width:620px){body.touch.flying #rotate{display:block}}
 @media (max-height:500px){
   #thr{height:128px;width:48px}
@@ -86,6 +87,7 @@ body.autotrim #trimCol{display:none!important}
   .card h1{font-size:30px}
 }
 @media (orientation:portrait) and (max-width:620px){
+  #hud{max-width:calc(100vw - 150px)}
   #rudRow{bottom:calc(196px + env(safe-area-inset-bottom,0px))}
   #trimCol{position:fixed;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(176px + env(safe-area-inset-bottom,0px));flex-direction:row}
 }
@@ -229,7 +231,7 @@ body:not(.touch) .touch-help{display:none}
       <h1 id="mTitle">R-Law Fly-In <small>v2</small></h1>
       <p class="sub" id="mSub">Turf runway <b>02/20</b> · <b>3,500 × 50 ft</b> · field elevation <b>310 ft</b> · cut through 70 ft pines. CTAF <b>122.9</b>. Take off, roam the piney woods, come back and land.</p>
     </div>
-    <p class="status" id="mStatus" hidden></p>
+    <p class="status" id="mStatus" style="color:var(--muted)">Loading the airfield…</p>
     <div class="plcap">AIRCRAFT</div>
     <div class="acsel" role="radiogroup" aria-label="Aircraft" id="acsel"></div>
     <div class="plcap startcap"><span class="key-help">CLICK</span><span class="touch-help">TAP</span> A BUTTON TO START FLYING ▾</div>
@@ -287,7 +289,7 @@ body:not(.touch) .touch-help{display:none}
       <dt>R F</dt><dd>Throttle up / down</dd>
       <dt>[ ]</dt><dd>Trim nose down / nose up, with auto trim off (menu). Auto trim holds the speed you were flying when you let go of the stick</dd>
       <dt>B · Space</dt><dd>Brakes. Hold rudder to brake one side</dd>
-      <dt>G · H</dt><dd>F-14: gear up / down, tailhook up / down. Throttle past 80% lights the afterburners</dd>
+      <dt>G · H</dt><dd>Gear up / down on the F-14, Brick Jet and C-130; tailhook up / down on the jets. Throttle past 80% lights the afterburners</dd>
       <dt>K</dt><dd>Fire the guns, with machine guns on (menu). A USB flight stick's trigger and a gamepad's LB fire them too, or pick any joystick button with SET FIRE BUTTON. Only the F-14's M61 is real; the others are for fun</dd>
       <dt>C · drag</dt><dd>Change view · drag the view to look around the cabin</dd>
     </dl>
@@ -296,7 +298,7 @@ body:not(.touch) .touch-help{display:none}
       <dt>Right stick</dt><dd>Pull down to raise the nose, sideways to bank</dd>
       <dt>Rudder</dt><dd>Auto rudder (menu) steers with the stick on the ground and keeps the ball centred. Turn it off for the rudder buttons; taildraggers need them the whole roll</dd>
       <dt>Auto trim</dt><dd>On by default. Let go of the stick and it holds the speed you were flying. Turn it off in the menu for the trim buttons</dd>
-      <dt>Gear · Hook</dt><dd>F-14 only. Throttle past 80% lights the afterburners</dd>
+      <dt>Gear · Hook</dt><dd>Gear on the F-14, Brick Jet and C-130; hook on the jets. Throttle past 80% lights the afterburners</dd>
       <dt>Fire</dt><dd>Hold the red button to fire, with machine guns on (menu)</dd>
       <dt>Drag view</dt><dd>Look around the cabin</dd>
     </dl>
@@ -836,17 +838,21 @@ const parked = [];
   obstacles.push({ x: cx, z: cz, r: 10, h: 16 });
 }
 // fair-weather cumulus, bases near 5,000 ft
+// the puffs are merged into two meshes (the scattered few that stay for the sunrise, and the rest), so the whole sky
+// is two draw calls instead of a few hundred
 const clouds = [];
 {
   const g = new THREE.IcosahedronGeometry(1, 2), m = new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x8a8f92 });
+  const parts = [[], []], m4 = new THREE.Matrix4(), q = new Q(), s = new V3(), p = new V3(); let i = 0;
   for (let c = 0; c < 46; c++) {
     const cx = (rnd() * 2 - 1) * 16000, cz = (rnd() * 2 - 1) * 16000, cy = 1560 + rnd() * 200, n = 4 + Math.floor(rnd() * 5);
     for (let k = 0; k < n; k++) {
-      const mesh = new THREE.Mesh(g, m), r = 60 + rnd() * 90;
-      mesh.scale.set(r * 1.3, r * .62, r); mesh.position.set(cx + (rnd() - .5) * 300, cy + r * .35 + rnd() * 40, cz + (rnd() - .5) * 300);
-      scene.add(mesh); clouds.push(mesh);
+      const r = 60 + rnd() * 90;
+      s.set(r * 1.3, r * .62, r); p.set(cx + (rnd() - .5) * 300, cy + r * .35 + rnd() * 40, cz + (rnd() - .5) * 300);
+      parts[(i++ * .618) % 1 < .35 ? 0 : 1].push({ g: g.clone().applyMatrix4(m4.compose(p, q, s)), c: [1, 1, 1] });
     }
   }
+  for (const P of parts) { const mesh = new THREE.Mesh(mergeGeo(P), m); mesh.frustumCulled = false; scene.add(mesh); clouds.push(mesh); }
 }
 
 /* ---------- aircraft data ---------- */
@@ -1017,6 +1023,9 @@ function bar(a, b, r, c, p, seg = 8, flat = 1, kind) {
   const A = new V3(...a), B = new V3(...b), m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, A.distanceTo(B), seg).scale(flat, 1, 1).rotateX(Math.PI / 2), pmat(c, kind));
   m.position.copy(A).add(B).multiplyScalar(.5); m.lookAt(B); m.castShadow = true; p.add(m); return m;
 }
+// the same tube as a bare geometry, for merging many short ones into a single mesh
+const _tbo = new THREE.Object3D();
+function tubeGeo(a, b, r, seg = 8) { const A = new V3(...a), B = new V3(...b), g = new THREE.CylinderGeometry(r, r, A.distanceTo(B), seg).rotateX(Math.PI / 2); _tbo.position.copy(A).add(B).multiplyScalar(.5); _tbo.lookAt(B); _tbo.updateMatrix(); return g.applyMatrix4(_tbo.matrix); }
 function wheel(r, w, x, y, z, p) {
   const g = new THREE.Group(); g.position.set(x, y, z); p.add(g);
   const tr = w * .5, t = new THREE.Mesh(new THREE.TorusGeometry(r - tr, tr, 12, 28).rotateY(Math.PI / 2), pmat(0x1c1d1f, 'rubber')); t.castShadow = true; g.add(t);
@@ -1024,7 +1033,24 @@ function wheel(r, w, x, y, z, p) {
   for (const s of [-1, 1]) { const cap = new THREE.Mesh(new THREE.SphereGeometry(r * .42, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, .35, 1).rotateZ(-s * Math.PI / 2), pmat(0xd8dadc, 'metal')); cap.position.x = s * w * .4; g.add(cap); }
   return g;
 }
-function canvasTex(w, h, draw) { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; draw(cv.getContext('2d'), w, h); const t = new THREE.CanvasTexture(cv); t.anisotropy = 4; return t; }
+const fontArt = [];
+function canvasTex(w, h, draw) { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; draw(cv.getContext('2d'), w, h); const t = new THREE.CanvasTexture(cv); t.anisotropy = 4; fontArt.push({ cv, draw, t }); return t; }
+// registrations, placards, insignia and the panel faces are painted on canvases while the page loads, which is usually
+// before the web fonts have arrived, so they come out in the fallback fonts. Once the fonts are in, paint them again
+const FONTS = ['700 20px "Barlow Condensed"', '12px B612', '12px "B612 Mono"'];
+let fontsDrawn = !document.fonts || FONTS.every(f => document.fonts.check(f));
+function redrawFontArt() {
+  if (fontsDrawn || !FONTS.every(f => document.fonts.check(f))) return;
+  fontsDrawn = true;
+  for (const a of fontArt) { const g = a.cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, a.cv.width, a.cv.height); a.draw(g, a.cv.width, a.cv.height); a.t.needsUpdate = true; }
+  for (const id of Object.keys(cabins)) drawStatic(id);
+  try { planeThumbs(); } catch (e) {}
+}
+if (!fontsDrawn) {
+  const tryFonts = () => Promise.all(FONTS.map(f => document.fonts.load(f))).then(redrawFontArt, () => {});
+  document.fonts.addEventListener('loadingdone', redrawFontArt);
+  setTimeout(tryFonts, 0); setTimeout(tryFonts, 2000); setTimeout(tryFonts, 6000);
+}
 // doped fabric over ribs: tapes along each rib, the fabric between them sags very slightly and catches less light
 const ribTex = canvasTex(64, 8, (g, w, h) => {
   const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, '#fff'); gr.addColorStop(.12, '#f1f1f1'); gr.addColorStop(.5, '#e6e6e6'); gr.addColorStop(.88, '#f1f1f1'); gr.addColorStop(1, '#fff');
@@ -1368,7 +1394,9 @@ function buildModel130(t) {
   t.frames = fr;
   // dark window seals on the outside, over the edges of the glazing
   const out = ([x, y, z]) => { const [, hw, hh, yc] = secAt(secs, z); return [x * (hw + .012) / hw, yc + (y - yc) * (hh + .012) / hh, z]; };
-  for (const l of fr) for (let i = 1; i < l.length; i++) outside.push(bar(out(l[i - 1]), out(l[i]), .022, 0x2b2f32, root, 5));
+  // all 500-odd seal segments go into one mesh: as separate bars they cost more draw calls than the rest of the airplane
+  { const parts = []; for (const l of fr) for (let i = 1; i < l.length; i++) parts.push({ g: tubeGeo(out(l[i - 1]), out(l[i]), .022, 5), c: [1, 1, 1] });
+    const m = new THREE.Mesh(mergeGeo(parts), pmat(0x2b2f32)); m.castShadow = true; root.add(m); outside.push(m); }
   // markings: low-visibility dark grey insignia and lettering, the crew door and the paratroop doors
   const ins = canvasTex(512, 256, (g, w, h) => {
     g.clearRect(0, 0, w, h); g.fillStyle = '#40464a'; const cx = w / 2, cy = h / 2, R = 104;
@@ -2037,7 +2065,8 @@ function cabin130() {
       new THREE.MeshLambertMaterial({ color: WALL, emissive: new THREE.Color(WALL).multiplyScalar(.22), side: THREE.BackSide, fog: false })); p.add(m); }
   // frames sit on the inside of the shell, over the edges of the cut-outs
   const inward = ([x, y, z]) => { const [, hw, hh, yc] = secAt(HERC_SECS, z); return [x * (hw - .05) / hw, yc + (y - yc) * (hh - .05) / hh, z]; };
-  for (const l of t.frames) for (let i = 1; i < l.length; i++) cbar(inward(l[i - 1]), inward(l[i]), .022, FRAME, p, 5);
+  { const parts = []; for (const l of t.frames) for (let i = 1; i < l.length; i++) parts.push({ g: tubeGeo(inward(l[i - 1]), inward(l[i]), .022, 5), c: [1, 1, 1] });
+    p.add(new THREE.Mesh(mergeGeo(parts), cmat(FRAME))); }
   cbox(3.6, .04, 3.8, FLOOR, 0, .4, -10.2, p);
   cbox(4.4, 3.2, .05, WALL, 0, .6, -8.32, p); cbox(.75, 1.75, .02, DARK, .9, 1.28, -8.35, p);           // bulkhead and the door to the cargo hold
   // main panel, glareshield, and the knee panel down to the rudder pedals
@@ -2494,8 +2523,7 @@ function applyWeather(id) {
   hemi.color.set(wx.sky); hemi.groundColor.set(wx.gnd); hemi.intensity = wx.hemiI;
   const U = sky.material.uniforms; U.uZen.value.set(wx.zen); U.uHor.value.set(wx.hor); U.uGlow.value.setRGB(...wx.glow); U.uBand.value = wx.band; U.uDisc.value = wx.disc;
   scene.fog.color.set(wx.haze); const cap = LITE && wx.fog[1] < 1e5; scene.fog.near = cap ? Math.min(wx.fog[0], 1200) : wx.fog[0]; scene.fog.far = cap ? Math.min(wx.fog[1], 9000) : wx.fog[1];
-  for (let i = 0; i < clouds.length; i++) clouds[i].visible = (i * .618) % 1 < wx.cu;
-  if (clouds.length) clouds[0].material.emissive.set(wx.cuTint || 0);
+  clouds[0].visible = wx.cu >= .35; clouds[1].visible = wx.cu >= 1; clouds[0].material.emissive.set(wx.cuTint || 0);
   cpHemi.intensity = wx.cp[0]; cpAmb.intensity = wx.cp[1]; cpSun.intensity = wx.cp[2];
   deckLo.visible = deckHi.visible = !!wx.ceil; if (wx.ceil) deckLo.material.color.set(wx.deck);
   rain.visible = !!wx.rain;
@@ -3074,7 +3102,7 @@ function updateCockpit(dt) {
   }
   if (T.id === 'c180') { C.thr.position.z = -.7 - ac.thr * .07; C.yoke.rotation.z = -inp.ail * .8; C.yoke.position.z = -.62 + inp.elev * .08; C.trim.rotation.x = ac.trim * 20; C.flap.rotation.x = -T.flaps[ac.flaps].deg * D2R * 1.4; }
   panelT += dt;
-  if (panelT > (LITE ? 1 / 10 : 1 / 30)) {
+  if (panelT > (LITE ? 1 / 10 : settings.high ? 1 / 30 : 1 / 20)) {   // each redraw uploads the whole panel texture, so the normal-quality setting takes it a little easier
     panelT = 0;
     drawPanel(T.id);
     if (C.comp) drawWhiskey(C.comp, instr.comp);
@@ -4028,8 +4056,9 @@ let state = 'title';
 const menu = $('menu'), mStatus = $('mStatus'), bResume = $('bResume');
 function openMenu(mode, msg) {
   if (mode === 'pause') state = 'paused';
-  menu.hidden = false; mStatus.textContent = msg || ''; mStatus.hidden = !msg; bResume.hidden = mode !== 'pause';
+  menu.hidden = false; mStatus.textContent = msg || ''; mStatus.hidden = !msg; mStatus.style.color = ''; bResume.hidden = mode !== 'pause';
   syncRunwayLabels();
+  menu.scrollTop = 0; menu.firstElementChild.scrollTop = 0;   // back to the top, so Resume is in view however far the card was scrolled last time
   (mode === 'pause' ? bResume : $('bApproach')).focus({ preventScroll: true });
 }
 function closeMenu() { menu.hidden = true; }
@@ -4054,7 +4083,7 @@ function resume() { closeMenu(); state = 'flying'; last = performance.now(); acc
 $('bTakeoff').addEventListener('click', () => begin('runway'));
 $('bApproach').addEventListener('click', () => begin('approach'));
 bResume.addEventListener('click', resume);
-$('bMenu').addEventListener('click', () => { if (state === 'flying') openMenu('pause'); else if (state === 'paused') resume(); else openMenu(state === 'crashed' ? 'crash' : 'title'); });
+$('bMenu').addEventListener('click', () => { if (state === 'flying') openMenu('pause'); else if (state === 'paused') resume(); else openMenu(state === 'crashed' ? 'crash' : 'title', state === 'crashed' && ac.why ? `Crashed · ${ac.why}` : ''); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'flying') openMenu('pause'); });
 function bindToggle(id, key, after) {
   const el = $(id), sync = () => el.setAttribute('aria-pressed', String(!!settings[key])); sync();
@@ -4239,15 +4268,16 @@ function frame(now) {
     camera.near = NEAR; camera.updateProjectionMatrix(); renderer.autoClear = true;
   }
 }
-window.__rf = { ac, TYPES, models, inp, step, setType: id => setType(id), begin, settings, groundHeight, solveTrim, get T() { return T; }, resetRunway, resetApproach, applyWeather, setWorld, get onMoon() { return onMoon; }, get atSea() { return atSea; }, SEA, ldU, ldV, ldX, ldZ, DECK, WIRES, LENS, get G() { return G; }, get wx() { return wx; }, rainMesh: rain, deckLo, camera, updateWeather, scene, rwU, rwV, FIELD, RW_LEN, heading, treeHit, windVec, fillTrees, cabins, get view() { return view; }, set view(v) { view = v; }, get state() { return state; } };
+window.__rf = { ac, TYPES, models, inp, step, setType: id => setType(id), begin, settings, groundHeight, solveTrim, get T() { return T; }, resetRunway, resetApproach, applyWeather, setWorld, get onMoon() { return onMoon; }, get atSea() { return atSea; }, SEA, ldU, ldV, ldX, ldZ, DECK, WIRES, LENS, get G() { return G; }, get wx() { return wx; }, rainMesh: rain, deckLo, camera, updateWeather, scene, rwU, rwV, FIELD, RW_LEN, heading, treeHit, windVec, fillTrees, cabins, get view() { return view; }, set view(v) { view = v; }, get state() { return state; }, renderer, get fontsDrawn() { return fontsDrawn; } };
 setType(settings.ac);
 if (settings.loc === 'moon' || settings.loc === 'sea' || settings.loc === 'kids') { setWorld(settings.loc); resetRunway(); } syncLoc();
 applyQuality();
 resize();
 updateHUD();
 openMenu('title');
-try { planeThumbs(); } catch (e) { console.warn('plane thumbnails', e); }
 requestAnimationFrame(frame);
+// the menu pictures come a moment after the menu itself, so the page is usable that much sooner
+setTimeout(() => { try { planeThumbs(); } catch (e) { console.warn('plane thumbnails', e); } }, 50);
 })();
 </script>
 </body>
