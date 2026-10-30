@@ -1,0 +1,46 @@
+name: Bug report
+description: Something in the sim is broken or behaves oddly
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: aircraft
+    attributes:
+      label: Aircraft
+      options: [J-3 Cub, Cessna 180 Skywagon, C-130H Hercules, F-14A Tomcat, Brick Jet, Not aircraft-specific]
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Location
+      options: [R-Law Texas, Carrier Gulf, The Moon, Free fly kids]
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: e.g. iPhone 15, Safari 18 / Windows 11, Chrome 141 / Steam Deck, Firefox
+    validations:
+      required: true
+  - type: dropdown
+    id: lite
+    attributes:
+      label: Ultra-low mode (?lite)
+      options: ["No", "Yes"]
+  - type: dropdown
+    id: input
+    attributes:
+      label: Controls
+      options: [Keyboard and mouse, Touch, Gamepad, USB flight stick]
+  - type: textarea
+    id: console
+    attributes:
+      label: Console errors (optional)
+      description: Desktop browsers show them under Developer Tools → Console.
+      render: text

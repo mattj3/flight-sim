@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly }
+    # three is pinned to r128 to match the cdnjs build index.html loads; upgrade both together, by hand
+    ignore:
+      - dependency-name: three
+    groups:
+      test-tooling:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }

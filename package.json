@@ -1,0 +1,22 @@
+{
+  "name": "r-law-fly-in",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Browser flight sim in a single HTML file. package.json holds test tooling only; the game has no build step.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "npm run test:physics && npm run test:smoke",
+    "test:physics": "node --test tests/physics.test.mjs",
+    "test:smoke": "playwright test",
+    "serve": "node tests/serve.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "acorn": "8.19.0",
+    "three": "0.128.0"
+  }
+}
