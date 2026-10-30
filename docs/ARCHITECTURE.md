@@ -4,8 +4,9 @@ R-Law Fly-In is one file, `index.html` (4,284 lines, 369 KB as of Oct 2026), plu
 build step: GitHub Pages serves the file as committed, and opening it from disk works too. Three.js r128 comes from
 cdnjs; fonts come from Google Fonts.
 
-`package.json`, `node_modules/` and `tests/` exist only for the test tooling. Nothing in them is served or loaded by the
-game.
+`package.json`, `node_modules/` and `tests/` exist only for the test tooling, and the game never loads them. Pages
+uses the default Jekyll build from `main`, so `_config.yml` lists them (with the docs and contributor files) under
+`exclude:` to keep them off the published site. `index.html` has no front matter, so Jekyll copies it unchanged.
 
 ## Map of `index.html`
 

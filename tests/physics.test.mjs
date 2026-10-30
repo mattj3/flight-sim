@@ -9,7 +9,9 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { load } from './lib/extract.mjs';
 
-const sim = load(
+// Each describe block gets its own freshly evaluated copy of the game code, so a test that changes the current aircraft
+// or retunes a table entry (the F-14 sweep test does) cannot leak into another block, whatever order they run in.
+const fresh = () => load(
   ['V3', 'Q', 'D2R', 'KT', 'clamp', 'sstep', 'lerp', 'G', 'TYPES', 'T', 'ac', 'liftCoef', 'engine', 'sos', 'approach', 'hash2', 'vnoise', 'TC_PIVOT', 'sweepState'],
   // the loop right after TYPES that derives each type's gear springs, stall angle and reference dynamic pressure
   { alsoMatch: [/^for \(const t of Object\.values\(TYPES\)\) \{\s*const \[mx, my, mz\] = t\.mainL/] }
@@ -17,9 +19,10 @@ const sim = load(
 const IDS = ['j3', 'c180', 'c130', 'f14', 'brick'];
 const near = (actual, expected, tol, msg) =>
   assert.ok(Math.abs(actual - expected) <= tol, `${msg}: expected ${expected} ± ${tol}, got ${actual}`);
-const use = id => { sim.T = sim.TYPES[id]; sim.ac.onGround = false; sim.ac.rev = 0; return sim.T; };
+const use = (sim, id) => { sim.T = sim.TYPES[id]; sim.ac.onGround = false; sim.ac.rev = 0; return sim.T; };
 
 describe('aircraft table', () => {
+  const sim = fresh();
   test('all five aircraft are defined', () => {
     assert.deepEqual(Object.keys(sim.TYPES), IDS);
   });
@@ -56,9 +59,10 @@ describe('aircraft table', () => {
 });
 
 describe('lift curve', () => {
+  const sim = fresh();
   test('linear range: CL = cl0 + k·α', () => {
     for (const id of IDS) {
-      const t = use(id);
+      const t = use(sim, id);
       near(sim.liftCoef(0, t.flaps[0]), t.cl0, 1e-12, `${id} CL at α=0`);
       near(sim.liftCoef(0.1, t.flaps[0]), t.cl0 + t.k * 0.1, 1e-12, `${id} CL at α=0.1`);
     }
@@ -67,7 +71,7 @@ describe('lift curve', () => {
   test('peaks at clmax exactly at the stall angle, then falls away', () => {
     const post = { j3: 0.972016, c180: 0.928601, c130: 1.055933, f14: 1.026651, brick: 0.992022 };
     for (const id of IDS) {
-      const t = use(id), f = t.flaps[0];
+      const t = use(sim, id), f = t.flaps[0];
       near(sim.liftCoef(t.stallA, f), t.clmax, 1e-9, `${id} CL at stall`);
       near(sim.liftCoef(t.stallA + 0.1, f), post[id], 1e-6, `${id} CL 0.1 rad past stall`);
       assert.ok(sim.liftCoef(t.stallA + 0.1, f) < t.clmax, `${id} lift drops past the stall`);
@@ -76,23 +80,24 @@ describe('lift curve', () => {
 
   test('continuous across the stall break (no step in CL)', () => {
     for (const id of IDS) {
-      const t = use(id), f = t.flaps[0], e = 1e-7;
+      const t = use(sim, id), f = t.flaps[0], e = 1e-7;
       near(sim.liftCoef(t.stallA + e, f), sim.liftCoef(t.stallA - e, f), 1e-5, `${id} CL either side of stall`);
       near(sim.liftCoef(-0.2 - e, f), sim.liftCoef(-0.2 + e, f), 1e-5, `${id} CL either side of negative stall`);
     }
   });
 
   test('deep stall converges to a flat-plate 0.95·sin(2α) for every type', () => {
-    for (const id of IDS) near(sim.liftCoef(0.8, use(id).flaps[0]), 0.949595, 1e-6, `${id} CL at α=0.8`);
+    for (const id of IDS) near(sim.liftCoef(0.8, use(sim, id).flaps[0]), 0.949595, 1e-6, `${id} CL at α=0.8`);
   });
 
   test('flaps add lift: Cessna 180 at 40° flap, α=0.1', () => {
-    const t = use('c180');
+    const t = use(sim, 'c180');
     near(sim.liftCoef(0.1, t.flaps[4]), 1.47, 1e-9, '180 full-flap CL');
   });
 });
 
 describe('engines (steady state, dt = 0)', () => {
+  const sim = fresh();
   // [V m/s, altitude m, throttle] → thrust N
   const cases = [[0, 0, 1], [30, 0, 1], [60, 0, 1], [100, 3000, 1], [60, 0, 0]];
   const want = {
@@ -104,14 +109,14 @@ describe('engines (steady state, dt = 0)', () => {
   };
   for (const id of IDS) {
     test(`${id}: thrust at full power and idle`, () => {
-      use(id);
+      use(sim, id);
       cases.forEach(([V, alt, thr], i) => near(sim.engine(V, alt, thr, 0), want[id][i], 0.1, `${id} thrust V=${V} alt=${alt} thr=${thr}`));
     });
   }
 
   test('full-power thrust falls with airspeed and with altitude', () => {
     for (const id of IDS) {
-      use(id);
+      use(sim, id);
       assert.ok(sim.engine(30, 0, 1, 0) < sim.engine(0, 0, 1, 0), `${id} thrust falls with speed`);
       assert.ok(sim.engine(60, 3000, 1, 0) < sim.engine(60, 0, 1, 0), `${id} thrust falls with altitude`);
     }
@@ -125,8 +130,9 @@ describe('engines (steady state, dt = 0)', () => {
 });
 
 describe('F-14 wing sweep', () => {
+  const sim = fresh();
   test('sweep schedule sets lift slope, induced drag, max lift and span', () => {
-    const t = use('f14');
+    const t = use(sim, 'f14');
     const want = { 20: [4.4, 0.055, 1.6, 0.340909, 19.54], 44: [3.65, 0.105, 1.45, 0.369863, 15.595], 68: [2.9, 0.155, 1.3, 0.413793, 11.65] };
     for (const s of [20, 44, 68]) {
       sim.ac.sweep = s; sim.sweepState(t);
@@ -134,11 +140,11 @@ describe('F-14 wing sweep', () => {
       near(t.k, k, 1e-9, `k at ${s}°`); near(t.ki, ki, 1e-9, `ki at ${s}°`); near(t.clmax, clmax, 1e-9, `clmax at ${s}°`);
       near(t.stallA, stallA, 1e-6, `stallA at ${s}°`); near(t.span, span, 1e-9, `span at ${s}°`);
     }
-    sim.ac.sweep = 20; sim.sweepState(t);   // leave the table as the page starts it
   });
 });
 
 describe('helpers', () => {
+  const sim = fresh();
   test('approach() moves toward a target at a capped rate and never overshoots', () => {
     assert.equal(sim.approach(0, 10, 2, 1), 2);
     assert.equal(sim.approach(0, 1, 2, 1), 1);
