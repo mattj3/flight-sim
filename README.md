@@ -2,7 +2,7 @@
 
 A browser flight sim: fly a Piper J-3 Cub, a Cessna 180K Skywagon, a Lockheed C-130H Hercules, a Grumman F-14A Tomcat or a toy-brick jet into a fictional grass-strip fly-in in the East Texas piney woods on a late-October afternoon, or out to a carrier in the Gulf.
 
-**Play it:** https://mattj3.github.io/flight-sims/
+**Play it:** https://mattj3.github.io/flight-sim/
 
 - Single-file page (`index.html`), built on Three.js r128 loaded from cdnjs. No build step.
 - Six-degree-of-freedom flight model at 120 Hz with prop slipstream, P-factor, ground effect and spring-damper gear.
@@ -13,7 +13,7 @@ A browser flight sim: fly a Piper J-3 Cub, a Cessna 180K Skywagon, a Lockheed C-
 - **Rockets · JATO** (menu, on by default): turn it off to take the Cub's rockets and the C-130's JATO bottles off, models and all. Real C-130s carried JATO only for short-field jobs, and real Cubs never had rockets.
 - **Machine guns** (menu, off by default): K, the red FIRE button on a phone, gamepad LB or a USB flight stick's trigger fires, and SET FIRE BUTTON in the menu binds any joystick button. The F-14's M61 Vulcan is the real thing: 6,000 rounds a minute and 675 rounds, about seven seconds of trigger. The Cub, 180 and C-130 never carried forward guns, so they get a pair of wing-mounted .50 cals just for fun, and the Brick Jet gets twin brick blasters. Rounds fly ballistic paths with every few a tracer, and the recoil is modelled: a long burst slows a Cub, because two .50s push back harder than its 65 hp pulls.
 - **Free fly · kids** (WHERE in the menu): the R-Law scenery with no crashing. Hit the ground or a tree and you bounce back up into the sky. Five slow, brightly painted target planes circle the field, with MACHINE GUNS on the guns never run out, and four hits sends one down in a trail of smoke to explode where it hits the ground. The data strip counts your kills.
-- **Ultra low** for old computers: open https://mattj3.github.io/flight-sims/?lite or press ULTRA LOW · OLD PCs in the menu. It drops shadows, antialiasing, the depth trick, most trees and the resolution, shortens the view, and caps the frame rate at 30. Flying is identical. The normal version is unchanged.
+- **Ultra low** for old computers: open https://mattj3.github.io/flight-sim/?lite or press ULTRA LOW · OLD PCs in the menu. It drops shadows, antialiasing, the depth trick, most trees and the resolution, shortens the view, and caps the frame rate at 30. Flying is identical. The normal version is unchanged.
 - Keyboard, mouse, gamepad or phone. On a phone, turn it sideways: throttle slider on the left, stick on the right. On iPhone, Share → Add to Home Screen gives a full-screen view.
 
 The town, field and scenery are fictional and generated, not surveyed.
