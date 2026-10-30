@@ -1,0 +1,14 @@
+# GitHub Pages builds this repo with the default Jekyll build from main. The game is index.html (no front matter, so
+# Jekyll copies it byte for byte). Everything below is test tooling or docs and should not be published with the site.
+exclude:
+  - tests/
+  - docs/
+  - package.json
+  - package-lock.json
+  - node_modules/
+  - CLAUDE.md
+  - CONTRIBUTING.md
+  - playwright.config.ts
+  - .github/
+  - test-results/
+  - playwright-report/
